@@ -1,0 +1,27 @@
+{
+  "name": "asset-vault",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "A private, passcode-protected asset drive with fuzzy search, previews, git sync and per-folder share links.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "share": "node scripts/tunnel.js",
+    "test": "node tests/api.test.js && node tests/search.test.js && node tests/upload.test.js && node tests/sync.test.js && node tests/clone.test.js",
+    "test:ui": "node tests/ui.test.js && node tests/ui-sync.test.js && node tests/fresh-install.test.js"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "express": "^4.21.2",
+    "multer": "^2.3.0",
+    "sharp": "^0.34.1"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^24.0.0"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
