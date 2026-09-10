@@ -598,9 +598,15 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('  ' + cfg.vaultName + ' is running');
   console.log('  Local:   http://localhost:' + PORT);
   for (const ip of localAddresses()) console.log('  Network: http://' + ip + ':' + PORT);
-  if (cfg.passcodeIsDefault && cfg.generatedPasscode) {
+  if (cfg.passcodeIsDefault) {
     console.log('');
-    console.log('  First run. Aapka passcode:  ' + cfg.generatedPasscode);
+    if (cfg.generatedPasscode) {
+      console.log('  First run. Aapka passcode:  ' + cfg.generatedPasscode);
+    } else {
+      // Config predates generated passcodes, so we cannot show it, but the
+      // owner still has not chosen one.
+      console.log('  Aapne abhi tak apna passcode set nahi kiya hai.');
+    }
     console.log('  (Login karke Settings me apna passcode set kar lijiye)');
   }
   if (!cfg.projects.length) console.log('  Koi project register nahi hai. Login karke "Add project" use kijiye.');
