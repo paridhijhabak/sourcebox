@@ -12,7 +12,11 @@ const { getConfig, saveConfig, setOwnerPasscode, checkOwnerPasscode, STORAGE_DIR
 const indexer = require('./lib/indexer');
 const shares = require('./lib/shares');
 const thumbs = require('./lib/thumbs');
+const palette = require('./lib/palette');
+const stars = require('./lib/stars');
+const theme = require('./lib/theme');
 const auth = require('./lib/auth');
+const users = require('./lib/users');
 const git = require('./lib/git');
 const sync = require('./lib/sync');
 
@@ -86,8 +90,12 @@ app.get('/api/session', (req, res) => {
     .map(shares.publicView);
   res.json({
     owner: req.session.owner,
+    user: req.session.user,
+    accountsExist: users.count() > 0,
     vaultName: cfg.vaultName,
     passcodeIsDefault: req.session.owner ? cfg.passcodeIsDefault : undefined,
+    // Sent to share visitors too, so a client's link wears the same colours.
+    theme: theme.read(),
     shares: unlocked,
   });
 });
@@ -95,7 +103,7 @@ app.get('/api/session', (req, res) => {
 app.post('/api/login', (req, res) => {
   const passcode = req.body && req.body.passcode;
   if (!passcode || !checkOwnerPasscode(passcode)) {
-    return res.status(401).json({ error: 'Galat passcode' });
+    return res.status(401).json({ error: 'Wrong passcode' });
   }
   res.setSession({ owner: true, shares: req.session.shares });
   res.json({ ok: true, passcodeIsDefault: getConfig().passcodeIsDefault });
@@ -106,17 +114,140 @@ app.post('/api/logout', (req, res) => {
   res.json({ ok: true });
 });
 
+/* --------------------------------------------------------------- accounts */
+
+/* A password guess costs scrypt, so unbounded guessing is expensive for us
+ * before it is expensive for the guesser. Count failures per client+email and
+ * close the door for a while once there are too many. In memory on purpose:
+ * a restart clearing it is fine, and there is nothing worth persisting. */
+const LOGIN_WINDOW_MS = 15 * 60000;
+const LOGIN_MAX_FAILS = 8;
+const loginFails = new Map();
+
+function throttleKey(req, email) {
+  return (req.ip || 'local') + '|' + users.normalizeEmail(email);
+}
+
+function throttledFor(key) {
+  const entry = loginFails.get(key);
+  if (!entry) return 0;
+  if (Date.now() > entry.until) { loginFails.delete(key); return 0; }
+  if (entry.n < LOGIN_MAX_FAILS) return 0;
+  return Math.ceil((entry.until - Date.now()) / 1000);
+}
+
+function noteLoginFail(key) {
+  const entry = loginFails.get(key) || { n: 0, until: 0 };
+  entry.n += 1;
+  entry.until = Date.now() + LOGIN_WINDOW_MS;
+  loginFails.set(key, entry);
+}
+
+/* What the product page needs before it draws its sign-in card: whether this
+ * vault has any account yet (so the first visitor is offered "create the owner
+ * account" rather than a login), and who is already signed in. */
+app.get('/api/auth/state', (req, res) => {
+  res.json({
+    vaultName: getConfig().vaultName,
+    accounts: users.count(),
+    needsFirstAccount: users.count() === 0,
+    signedIn: !!req.session.owner,
+    user: req.session.user,
+    minPasswordLength: users.MIN_PASSWORD,
+  });
+});
+
+app.post('/api/auth/signup', (req, res) => {
+  const { name, email, password, passcode } = req.body || {};
+  // Open only for the very first account. After that this vault already has an
+  // owner, so a new account needs the owner passcode as its invitation —
+  // otherwise anyone who can reach the LAN address could sign themselves in.
+  if (users.count() > 0 && !req.session.owner) {
+    if (!passcode || !checkOwnerPasscode(passcode)) {
+      return res.status(401).json({
+        error: 'This vault already has an owner. Enter the vault passcode to create another account.',
+        needsPasscode: true,
+      });
+    }
+  }
+  try {
+    const user = users.create({ name, email, password });
+    // An account session carries the user id only, never the passcode-owner
+    // flag: removing the account has to take its open sessions down with it.
+    res.setSession({ userId: user.id, shares: req.session.shares });
+    res.json({ ok: true, user: users.publicView(user) });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body || {};
+  const key = throttleKey(req, email);
+  const waitFor = throttledFor(key);
+  if (waitFor) {
+    return res.status(429).json({ error: `Too many attempts. Try again in ${Math.ceil(waitFor / 60)} min.` });
+  }
+  const user = users.verify(email, password);
+  if (!user) {
+    noteLoginFail(key);
+    return res.status(401).json({ error: 'Wrong email or password' });
+  }
+  loginFails.delete(key);
+  users.touchLogin(user.id);
+  res.setSession({ userId: user.id, shares: req.session.shares });
+  res.json({ ok: true, user: users.publicView(user) });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  res.clearSession();
+  res.json({ ok: true });
+});
+
+app.get('/api/auth/users', auth.requireOwner, (req, res) => {
+  res.json({ users: users.list() });
+});
+
+app.post('/api/auth/password', auth.requireOwner, (req, res) => {
+  const { current, next } = req.body || {};
+  const me = req.session.user;
+  if (!me) return res.status(400).json({ error: 'Signed in with the vault passcode, not an account' });
+  if (!users.verify(me.email, current)) return res.status(401).json({ error: 'Current password is wrong' });
+  try {
+    users.setPassword(me.id, next);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/auth/users/:id', auth.requireVaultOwner, (req, res) => {
+  const target = users.byId(req.params.id);
+  if (!target) return res.status(404).json({ error: 'No such account' });
+  if (target.role === 'owner') return res.status(400).json({ error: 'The owner account cannot be removed' });
+  users.remove(target.id);
+  res.json({ ok: true });
+});
+
 app.post('/api/passcode', auth.requireOwner, (req, res) => {
   const { current, next } = req.body || {};
-  if (!checkOwnerPasscode(current)) return res.status(401).json({ error: 'Current passcode galat hai' });
-  if (!next || String(next).length < 4) return res.status(400).json({ error: 'Naya passcode kam se kam 4 character ka ho' });
+  if (!checkOwnerPasscode(current)) return res.status(401).json({ error: 'Current passcode is wrong' });
+  if (!next || String(next).length < 4) return res.status(400).json({ error: 'New passcode must be at least 4 characters' });
   setOwnerPasscode(String(next));
   res.json({ ok: true });
 });
 
+app.post('/api/theme', auth.requireOwner, (req, res) => {
+  try {
+    res.json({ ok: true, theme: theme.write(req.body || {}) });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message });
+  }
+});
+
 app.post('/api/vault-name', auth.requireOwner, (req, res) => {
   const cfg = getConfig();
-  cfg.vaultName = String((req.body && req.body.name) || 'Asset Vault').slice(0, 60);
+  cfg.vaultName = String((req.body && req.body.name) || 'SourceBox').slice(0, 60);
   saveConfig(cfg);
   res.json({ ok: true, vaultName: cfg.vaultName });
 });
@@ -138,7 +269,7 @@ app.post('/api/share/:token/unlock', (req, res) => {
   const share = shares.get(req.params.token);
   if (!share) return res.status(404).json({ error: 'Ye link exist nahi karta' });
   if (shares.isExpired(share)) return res.status(410).json({ error: 'Ye link expire ho chuka hai' });
-  if (!shares.verify(share, req.body && req.body.passcode)) return res.status(401).json({ error: 'Galat passcode' });
+  if (!shares.verify(share, req.body && req.body.passcode)) return res.status(401).json({ error: 'Wrong passcode' });
   const next = [...new Set([...req.session.shares, share.token])];
   res.setSession({ owner: req.session.owner, shares: next });
   shares.touch(share.token);
@@ -177,7 +308,7 @@ app.get('/api/catalog', (req, res) => {
     projects: [{
       id: share.projectId,
       name: project ? project.name : 'Project',
-      color: project ? project.color : '#d64545',
+      color: project ? project.color : '#fb6530',
       files: scoped.files, folders: scoped.folders, bytes: scoped.bytes,
     }],
   });
@@ -246,6 +377,42 @@ app.get('/api/thumb', async (req, res) => {
   // Browser must render it (PDF/AI via pdf.js, video via canvas) then post it back.
   res.setHeader('X-Thumb-Key', result.key);
   res.status(204).end();
+});
+
+/* Dimensions and dominant colours in one call, because the viewer wants both
+ * at the same moment. Share visitors get this too: resolveRequest already
+ * refuses anything outside the folder they were given. */
+app.get('/api/palette', async (req, res) => {
+  const r = resolveRequest(req, res);
+  if (!r) return;
+  const out = await palette.extract(r.abs);
+  if (!out.ok) return res.status(422).json({ error: out.err });
+  res.setHeader('Cache-Control', 'private, max-age=604800');
+  res.json(out);
+});
+
+/* What git knows about one file. Owner only: a share visitor was given a
+ * folder, not the project's history. */
+app.get('/api/file-log', auth.requireOwner, async (req, res) => {
+  const project = projectById(req.query.p);
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+  const rel = String(req.query.f || '');
+  if (!safeResolve(project.root, rel)) return res.status(400).json({ error: 'Bad path' });
+  res.json(await git.fileLog(project.root, rel, 8));
+});
+
+/* ----------------------------------------------------------- owner: stars */
+
+app.get('/api/stars', auth.requireOwner, (req, res) => {
+  res.json({ stars: stars.list() });
+});
+
+app.post('/api/stars', auth.requireOwner, (req, res) => {
+  const { projectId, path: rel } = req.body || {};
+  const project = projectById(projectId);
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+  if (!rel || !safeResolve(project.root, rel)) return res.status(400).json({ error: 'Bad path' });
+  res.json({ ok: true, starred: stars.toggle(projectId, String(rel)) });
 });
 
 app.post('/api/thumb-cache', express.raw({ type: 'image/*', limit: '4mb' }), async (req, res) => {
@@ -320,7 +487,7 @@ app.post('/api/projects', auth.requireOwner, (req, res) => {
     name: String(name).slice(0, 80),
     root: resolvedRoot,
     managed,
-    color: color || '#d64545',
+    color: color || '#fb6530',
     addedAt: Date.now(),
   });
   saveConfig(cfg);
@@ -342,6 +509,7 @@ app.delete('/api/projects/:id', auth.requireOwner, (req, res) => {
   cfg.projects = cfg.projects.filter((p) => p.id !== req.params.id);
   saveConfig(cfg);
   for (const s of shares.list()) if (s.projectId === req.params.id) shares.revoke(s.token);
+  stars.removeProject(req.params.id);
 
   let removeError = null;
   if (deleteFiles) {
@@ -572,6 +740,9 @@ app.get('/api/events', (req, res) => {
 /* ------------------------------------------------------------------ pages */
 
 app.use(express.static(path.join(ROOT, 'public'), { index: false, maxAge: '1h' }));
+/* The product page. Deliberately outside the passcode: it describes the vault,
+ * it does not expose anything in it. */
+app.get(['/usp', '/product'], (req, res) => res.sendFile(path.join(ROOT, 'public', 'usp.html')));
 app.get('/', (req, res) => res.sendFile(path.join(ROOT, 'public', 'index.html')));
 app.get('/s/:token', (req, res) => res.sendFile(path.join(ROOT, 'public', 'index.html')));
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
@@ -601,15 +772,19 @@ app.listen(PORT, '0.0.0.0', () => {
   if (cfg.passcodeIsDefault) {
     console.log('');
     if (cfg.generatedPasscode) {
-      console.log('  First run. Aapka passcode:  ' + cfg.generatedPasscode);
+      console.log('  First run. Your passcode:  ' + cfg.generatedPasscode);
     } else {
       // Config predates generated passcodes, so we cannot show it, but the
       // owner still has not chosen one.
-      console.log('  Aapne abhi tak apna passcode set nahi kiya hai.');
+      console.log('  You have not set your own passcode yet.');
     }
-    console.log('  (Login karke Settings me apna passcode set kar lijiye)');
+    console.log('  (Sign in, then set your own in Settings)');
   }
-  if (!cfg.projects.length) console.log('  Koi project register nahi hai. Login karke "Add project" use kijiye.');
+  if (!users.count()) {
+    console.log('');
+    console.log('  No account yet. Create the owner account at http://localhost:' + PORT + '/product#account');
+  }
+  if (!cfg.projects.length) console.log('  No projects registered yet. Sign in and use "Add project".');
 
   sync.start();
   const repos = cfg.projects.filter((p) => git.isRepo(p.root));

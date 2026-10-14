@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SourceBox</title>
+<meta name="description" content="A private, self-hosted drive that reads your existing folders in place, finds any file from a plain-language description, previews it in the browser, and hands anyone one folder by a secure link.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23fb6530'/%3E%3Cpath d='M9 12h5l2 2.4h7v9.6H9z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+  /* Dark-committed product page: one deliberate visual world, every colour painted explicitly. */
+  :root {
+    --bg:        #100F0E;
+    --bg-2:      #0A0908;
+    --panel:     #1A1917;
+    --panel-2:   #222120;
+    --line:      #302E2B;
+    --line-soft: #26241f;
+    --ink:       #F7F4EF;
+    --ink-2:     #AAA49B;
+    --ink-3:     #716B63;
+
+    --accent:      #FB6530;
+    --accent-lit:  #FF9A63;
+    --accent-deep: #C4410F;
+    --accent-soft: rgba(251, 101, 48, 0.14);
+    --accent-line: rgba(251, 101, 48, 0.30);
+
+    --good: #5FBE89;
+
+    --radius: 14px;
+    --radius-lg: 22px;
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --mono: "JetBrains Mono", "Cascadia Mono", ui-monospace, Menlo, monospace;
+    --wrap: 1140px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+    background:
+      radial-gradient(920px 620px at 78% -6%, rgba(251,101,48,.16), transparent 58%),
+      radial-gradient(760px 560px at -6% 102%, rgba(251,101,48,.08), transparent 55%),
+      var(--bg);
+  }
+  a { color: inherit; text-decoration: none; }
+  h1, h2, h3, h4 { margin: 0; font-family: var(--display); letter-spacing: -0.02em; line-height: 1.04; text-wrap: balance; }
+  p { margin: 0; }
+  .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
+  .mono { font-family: var(--mono); }
+
+  /* motion */
+  @keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+  @keyframes caret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+  @keyframes tileIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+  @keyframes glowPulse { 0%, 100% { opacity: .55; } 50% { opacity: .85; } }
+  .rise { animation: rise .7s cubic-bezier(.2,.7,.3,1) both; }
+  .d1 { animation-delay: .05s; } .d2 { animation-delay: .13s; } .d3 { animation-delay: .22s; }
+  .d4 { animation-delay: .32s; } .d5 { animation-delay: .42s; }
+  .reveal { opacity: 1; }
+  .js .reveal { opacity: 0; transform: translateY(22px); transition: opacity .6s ease, transform .6s cubic-bezier(.2,.7,.3,1); }
+  .js .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .rise, .glow, [class^="type-"], .tile { animation: none !important; }
+    .js .reveal { opacity: 1 !important; transform: none !important; transition: none; }
+    .caret { display: none; }
+  }
+
+  /* ---------------------------------------------------------------- nav */
+  nav {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .nav-in { display: flex; align-items: center; gap: 18px; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 11px; font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+  .brand .tile { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
+    background: linear-gradient(158deg, var(--accent-lit), var(--accent-deep)); box-shadow: 0 4px 14px var(--accent-line); }
+  .brand .tile svg { width: 17px; height: 17px; }
+  .nav-links { display: flex; gap: 28px; margin-inline: auto; font-size: 14px; color: var(--ink-2); }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-actions { display: flex; align-items: center; gap: 10px; }
+  /* The centred links hold the middle on desktop; once they go, the buttons
+     take the right edge themselves. */
+  @media (max-width: 880px) { .nav-links { display: none; } .nav-actions { margin-left: auto; } }
+  /* On a phone the nav keeps one door: the section below carries both. */
+  @media (max-width: 620px) {
+    #nav-login { display: none; }
+    .nav-in .btn { padding: 10px 14px; font-size: 13px; }
+    .brand { font-size: 15px; }
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+    padding: 11px 18px; border-radius: 999px; font-family: var(--body);
+    font-size: 14px; font-weight: 600; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
+    transition: transform .16s cubic-bezier(.2,.7,.3,1), border-color .16s, box-shadow .16s;
+  }
+  .btn:hover { transform: translateY(-2px); border-color: #45423d; }
+  .btn-primary { border-color: transparent; color: #fff;
+    background: linear-gradient(162deg, var(--accent-lit) -8%, var(--accent) 48%, var(--accent-deep) 132%);
+    box-shadow: 0 8px 24px rgba(251,101,48,.32); }
+  .btn-primary:hover { box-shadow: 0 12px 32px rgba(251,101,48,.44); border-color: transparent; }
+
+  /* ---------------------------------------------------------------- hero */
+  header { padding: 60px 0 40px; }
+  .hero-grid { display: grid; grid-template-columns: 1.02fr 1.1fr; gap: 54px; align-items: center; }
+  @media (max-width: 940px) { .hero-grid { grid-template-columns: 1fr; gap: 40px; } }
+
+  .eyebrow { display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 12px; letter-spacing: .04em;
+    color: var(--ink-2); background: var(--panel); border: 1px solid var(--line); padding: 6px 13px 6px 7px; border-radius: 999px; }
+  .eyebrow b { color: var(--accent-lit); font-weight: 700; background: var(--accent-soft); padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+  h1.hero-h { font-size: clamp(40px, 6.6vw, 68px); font-weight: 700; margin-top: 24px; }
+  h1.hero-h em { font-style: normal; color: transparent; background: linear-gradient(118deg, var(--accent-lit), var(--accent) 56%, var(--accent-deep)); -webkit-background-clip: text; background-clip: text; }
+  .hero-lede { margin-top: 22px; font-size: clamp(16.5px, 1.9vw, 19px); color: var(--ink-2); max-width: 46ch; }
+  .hero-cta { margin-top: 30px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero-foot { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 8px 20px; font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+  .hero-foot span { display: inline-flex; align-items: center; gap: 7px; }
+  .dotgood { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); }
+
+  /* --- signature: faux product window --- */
+  .window-wrap { position: relative; }
+  .window-glow { position: absolute; inset: -8% -4% -14%; z-index: 0; border-radius: 40px; filter: blur(46px);
+    background: radial-gradient(ellipse at 60% 30%, rgba(251,101,48,.34), transparent 64%); animation: glowPulse 7s ease-in-out infinite; }
+  .window { position: relative; z-index: 1; border-radius: var(--radius-lg); overflow: hidden;
+    border: 1px solid #332f2a; background: var(--panel); box-shadow: 0 40px 90px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.04); }
+  .win-bar { display: flex; align-items: center; gap: 7px; padding: 12px 15px; border-bottom: 1px solid var(--line-soft); background: var(--panel-2); }
+  .win-dot { width: 11px; height: 11px; border-radius: 50%; background: #3a3833; }
+  .win-url { margin-left: 10px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+  .win-body { display: grid; grid-template-columns: 128px 1fr; min-height: 318px; }
+  .win-side { border-right: 1px solid var(--line-soft); padding: 14px 10px; display: flex; flex-direction: column; gap: 4px; background: var(--bg-2); }
+  .win-side .s-h { font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); padding: 6px 8px 4px; }
+  .win-side .s-row { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 8px; font-size: 12.5px; color: var(--ink-2); }
+  .win-side .s-row.on { background: var(--accent-soft); color: var(--ink); }
+  .win-side .s-row .pd { width: 8px; height: 8px; border-radius: 3px; background: var(--accent); flex: none; }
+  .win-side .s-row .pd.b { background: #4f8df0; } .win-side .s-row .pd.g { background: var(--good); }
+  .win-main { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .win-search { display: flex; align-items: center; gap: 10px; padding: 10px 13px; border: 1px solid var(--accent-line); border-radius: 11px; background: var(--bg-2); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .win-search svg { width: 15px; height: 15px; color: var(--accent-lit); flex: none; }
+  .win-search .q { font-size: 13.5px; color: var(--ink); }
+  .caret { display: inline-block; width: 2px; height: 15px; background: var(--accent-lit); vertical-align: -3px; margin-left: 1px; animation: caret 1s step-end infinite; }
+  .win-meta { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); }
+  .pill-share { display: inline-flex; align-items: center; gap: 6px; color: var(--accent-lit); background: var(--accent-soft); border: 1px solid var(--accent-line); padding: 3px 9px; border-radius: 999px; font-weight: 500; }
+  .win-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .tile { border: 1px solid var(--line-soft); border-radius: 10px; overflow: hidden; background: var(--bg-2); opacity: 0; animation: tileIn .5s ease both; }
+  .tile .thumb { height: 58px; display: grid; place-items: center; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .05em; }
+  .tile .cap { padding: 7px 9px; font-size: 10.5px; color: var(--ink-2); border-top: 1px solid var(--line-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile .cap b { color: var(--ink); font-weight: 600; }
+
+  /* ---------------------------------------------------------------- sections */
+  section { padding: 84px 0; }
+  .sec-head { max-width: 640px; }
+  .sec-k { font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+  h2 { font-size: clamp(28px, 4.1vw, 44px); font-weight: 700; margin-top: 16px; }
+  .sec-head p { margin-top: 18px; color: var(--ink-2); font-size: 18px; }
+  .center { margin-inline: auto; text-align: center; }
+
+  /* problem row */
+  .prob { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 46px; }
+  @media (max-width: 820px) { .prob { grid-template-columns: 1fr; } }
+  .prob-c { padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+  .prob-c .x { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--accent-lit); background: var(--accent-soft); margin-bottom: 14px; }
+  .prob-c h4 { font-size: 17px; font-weight: 600; }
+  .prob-c p { color: var(--ink-2); margin-top: 8px; font-size: 15px; }
+
+  /* steps */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 50px; counter-reset: s; }
+  @media (max-width: 820px) { .steps { grid-template-columns: 1fr; } }
+  .step { position: relative; padding: 28px 24px 26px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: linear-gradient(180deg, var(--panel), var(--bg-2)); }
+  .step .num { counter-increment: s; font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--accent); }
+  .step h3 { font-size: 22px; font-weight: 700; margin-top: 12px; }
+  .step p { color: var(--ink-2); margin-top: 10px; font-size: 15.5px; }
+  .step .ex { margin-top: 16px; font-family: var(--mono); font-size: 12px; color: var(--ink-3); background: var(--bg-2); border: 1px solid var(--line-soft); border-radius: 9px; padding: 9px 11px; }
+  .step .ex b { color: var(--accent-lit); font-weight: 500; }
+
+  /* feature grid */
+  .feat { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 50px; }
+  @media (max-width: 1000px) { .feat { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .feat { grid-template-columns: 1fr; } }
+  .f { padding: 22px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); transition: border-color .16s, transform .16s; }
+  .f:hover { border-color: var(--accent-line); transform: translateY(-3px); }
+  .f .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; color: var(--accent-lit); background: var(--accent-soft); margin-bottom: 15px; }
+  .f .ic svg { width: 19px; height: 19px; }
+  .f h4 { font-size: 16px; font-weight: 600; }
+  .f p { color: var(--ink-2); margin-top: 8px; font-size: 14.5px; line-height: 1.55; }
+
+  /* audiences */
+  .aud { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 44px; }
+  .aud-c { flex: 1 1 280px; display: flex; gap: 14px; align-items: flex-start; padding: 20px 22px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+  .aud-c .ab { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--accent-lit); background: var(--accent-soft); border-radius: 8px; padding: 7px 9px; white-space: nowrap; }
+  .aud-c h4 { font-size: 15.5px; font-weight: 600; }
+  .aud-c p { color: var(--ink-2); margin-top: 5px; font-size: 14px; }
+
+  /* privacy band */
+  .band { border: 1px solid var(--accent-line); border-radius: var(--radius-lg); padding: 48px 44px; position: relative; overflow: hidden;
+    background: radial-gradient(900px 420px at 85% -30%, rgba(251,101,48,.14), transparent 60%), var(--panel); }
+  .band h2 { max-width: 20ch; }
+  .band .lead { margin-top: 18px; color: var(--ink-2); font-size: 18px; max-width: 58ch; }
+  .band-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 30px; }
+  @media (max-width: 820px) { .band-list { grid-template-columns: 1fr; } .band { padding: 36px 26px; } }
+  .band-list li { list-style: none; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); }
+  .band-list .t { font-weight: 600; display: flex; align-items: center; gap: 9px; }
+  .band-list .t .c { color: var(--good); display: inline-flex; }
+  .band-list p { color: var(--ink-2); font-size: 14px; margin-top: 7px; }
+
+  /* specs strip */
+  .specs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 48px; background: var(--line-soft); border: 1px solid var(--line-soft); border-radius: var(--radius-lg); overflow: hidden; }
+  @media (max-width: 820px) { .specs { grid-template-columns: repeat(2, 1fr); } }
+  .spec { background: var(--panel); padding: 26px 22px; }
+  .spec .v { font-family: var(--display); font-size: 30px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+  .spec .v em { font-style: normal; color: var(--accent); }
+  .spec .l { font-family: var(--mono); font-size: 11.5px; letter-spacing: .03em; color: var(--ink-3); margin-top: 7px; }
+
+  /* ------------------------------------------------------------- account */
+  .acct-grid { display: grid; grid-template-columns: 1fr 440px; gap: 48px; align-items: start; }
+  @media (max-width: 960px) { .acct-grid { grid-template-columns: 1fr; gap: 34px; } }
+  .acct-points { display: grid; gap: 14px; margin-top: 30px; padding: 0; }
+  .acct-points li { list-style: none; display: flex; gap: 13px; align-items: flex-start; }
+  .acct-points .c { flex: none; width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center;
+    color: var(--accent-lit); background: var(--accent-soft); border: 1px solid var(--accent-line); }
+  .acct-points .c svg { width: 13px; height: 13px; }
+  .acct-points b { font-weight: 600; display: block; font-size: 15.5px; }
+  .acct-points p { color: var(--ink-2); font-size: 14.5px; margin-top: 3px; }
+
+  .auth-card { border: 1px solid var(--line); border-radius: var(--radius-lg); background: linear-gradient(180deg, var(--panel), var(--bg-2));
+    padding: 28px 28px 24px; box-shadow: 0 30px 70px rgba(0,0,0,.45); }
+  .auth-card h3 { font-size: 22px; font-weight: 700; }
+  .auth-card .sub { color: var(--ink-2); font-size: 14.5px; margin-top: 8px; }
+
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-top: 22px;
+    background: var(--bg-2); border: 1px solid var(--line-soft); border-radius: 999px; }
+  .seg button { appearance: none; border: 0; cursor: pointer; font-family: var(--body); font-size: 13.5px; font-weight: 600;
+    padding: 9px 10px; border-radius: 999px; background: transparent; color: var(--ink-2); transition: background .16s, color .16s; }
+  .seg button[aria-selected="true"] { background: var(--panel-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+
+  .fld { margin-top: 14px; }
+  .fld label { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 7px; }
+  .fld input { width: 100%; font-family: var(--body); font-size: 15px; color: var(--ink); background: var(--bg-2);
+    border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; transition: border-color .16s, box-shadow .16s; }
+  .fld input::placeholder { color: var(--ink-3); }
+  .fld input:focus { outline: none; border-color: var(--accent-line); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .fld .hint { font-size: 12.5px; color: var(--ink-3); margin-top: 6px; }
+  .auth-card .btn-primary { width: 100%; justify-content: center; margin-top: 20px; padding: 13px 18px; cursor: pointer; }
+  .auth-card .btn-primary[disabled] { opacity: .6; cursor: wait; }
+
+  .auth-msg { margin-top: 14px; font-size: 13.5px; min-height: 19px; }
+  .auth-msg.err { color: #FF9A86; }
+  .auth-msg.good { color: var(--good); }
+  .auth-foot { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line-soft); font-size: 13px; color: var(--ink-3); }
+  .auth-foot a { color: var(--accent-lit); text-decoration: underline; text-underline-offset: 3px; }
+  .hide { display: none !important; }
+  .who { display: flex; align-items: center; gap: 12px; margin-top: 20px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); }
+  .who .av { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-family: var(--display);
+    color: #fff; background: linear-gradient(162deg, var(--accent-lit), var(--accent-deep)); }
+  .who .nm { font-weight: 600; font-size: 14.5px; }
+  .who .em { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+
+  /* cta */
+  .cta-final { text-align: center; padding: 96px 0 40px; }
+  .cta-final h2 { font-size: clamp(32px, 5vw, 56px); font-weight: 800; max-width: 18ch; margin-inline: auto; }
+  .cta-final h2 em { font-style: normal; color: transparent; background: linear-gradient(118deg, var(--accent-lit), var(--accent-deep)); -webkit-background-clip: text; background-clip: text; }
+  .cta-final p { color: var(--ink-2); margin: 20px auto 0; max-width: 52ch; font-size: 18px; }
+  .cmd { margin-top: 34px; display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 14px; color: var(--ink); background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 13px 18px; }
+  .cmd .pr { color: var(--accent-lit); }
+
+  footer { border-top: 1px solid var(--line-soft); padding: 34px 0 60px; }
+  .foot-in { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; }
+  .foot-in .mono { font-size: 12px; color: var(--ink-3); }
+
+  :focus-visible { outline: 2px solid var(--accent-lit); outline-offset: 3px; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="u-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="u-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4.2l2 2.4h8.8A1.5 1.5 0 0 1 21 9.9v8.6a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></symbol>
+  <symbol id="u-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="17.5" cy="6" r="2.6"/><circle cx="6.5" cy="12" r="2.6"/><circle cx="17.5" cy="18" r="2.6"/><path d="m9 10.7 6-3.4M9 13.3l6 3.4"/></symbol>
+  <symbol id="u-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="u-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v4.5h-4.5"/></symbol>
+  <symbol id="u-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.4"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></symbol>
+  <symbol id="u-swatch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></symbol>
+  <symbol id="u-git" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="5.5" r="2.3"/><circle cx="7" cy="18.5" r="2.3"/><circle cx="17.5" cy="9" r="2.3"/><path d="M7 7.8v8.4M17.5 11.3v.7a4 4 0 0 1-4 4H7"/></symbol>
+  <symbol id="u-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="u-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+</defs></svg>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="#top"><span class="tile"><svg viewBox="0 0 32 32" fill="none"><path d="M9 12h5l2 2.4h7v9.6H9z" fill="#fff"/></svg></span>SourceBox</a>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#teams">For teams</a>
+      <a href="#private">Private</a>
+      <a href="#account">Accounts</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn hide" id="nav-login" href="#account">Log in</a>
+      <a class="btn btn-primary" id="nav-cta" href="#account">Create account</a>
+    </div>
+  </div>
+</nav>
+
+<header id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow rise d1"><b>Self-hosted</b> Your files never leave your machine</span>
+      <h1 class="hero-h rise d2">Find any file by <em>describing it.</em> Share one folder, not your whole drive.</h1>
+      <p class="hero-lede rise d3">SourceBox is a private drive that reads your existing folders in place — nothing is copied or uploaded. Search them the way you'd describe a file out loud, preview almost anything in the browser, and hand someone a single folder through a secure link that expires when you say so.</p>
+      <div class="hero-cta rise d4">
+        <a class="btn btn-primary" id="hero-cta" href="#account">Create your account</a>
+        <a class="btn" id="hero-login" href="#account">Log in</a>
+      </div>
+      <div class="hero-foot rise d5">
+        <span><i class="dotgood"></i> Accounts stay on your machine</span>
+        <span><i class="dotgood"></i> Runs on your computer</span>
+        <span><i class="dotgood"></i> Free &amp; open source</span>
+      </div>
+    </div>
+
+    <!-- signature: faux product window -->
+    <div class="window-wrap rise d3">
+      <div class="window-glow"></div>
+      <div class="window" role="img" aria-label="The SourceBox app: a plain-language search for 'last quarter invoice' returning matching files, with a shared-folder link.">
+        <div class="win-bar">
+          <span class="win-dot"></span><span class="win-dot"></span><span class="win-dot"></span>
+          <span class="win-url">localhost:4477</span>
+        </div>
+        <div class="win-body">
+          <div class="win-side" aria-hidden="true">
+            <div class="s-h">Projects</div>
+            <div class="s-row on"><span class="pd"></span> Finance</div>
+            <div class="s-row"><span class="pd b"></span> Brand kit</div>
+            <div class="s-row"><span class="pd g"></span> Client work</div>
+            <div class="s-h" style="margin-top:8px">Views</div>
+            <div class="s-row">★ Starred</div>
+            <div class="s-row">◷ Recent</div>
+          </div>
+          <div class="win-main">
+            <div class="win-search">
+              <svg><use href="#u-search"/></svg>
+              <span class="q"><span id="typed"></span><span class="caret"></span></span>
+            </div>
+            <div class="win-meta">
+              <span id="resultcount">6 matches</span>
+              <span class="pill-share"><svg width="11" height="11" style="color:inherit"><use href="#u-share"/></svg> Finance · shared link</span>
+            </div>
+            <div class="win-tiles" id="tiles"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- PROBLEM -->
+  <section id="problem">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-k">The everyday mess</div>
+        <h2>Everything's somewhere. Finding it is the problem.</h2>
+        <p>Files pile up across folders, drives and repos. The tools around them weren't built for how people actually look for things — or for handing one piece to someone else without handing over everything.</p>
+      </div>
+      <div class="prob">
+        <div class="prob-c reveal">
+          <div class="x"><svg width="17" height="17"><use href="#u-search"/></svg></div>
+          <h4>You remember the file, not its name</h4>
+          <p>Search by filename only works if you named it well a year ago. Nobody did. "The red logo" and "last quarter's invoice" draw a blank.</p>
+        </div>
+        <div class="prob-c reveal">
+          <div class="x"><svg width="17" height="17"><use href="#u-folder"/></svg></div>
+          <h4>Sharing means over-sharing</h4>
+          <p>Send a cloud link and the recipient can wander the whole drive — or you spend ten minutes copying files into a new folder just to share three of them.</p>
+        </div>
+        <div class="prob-c reveal">
+          <div class="x"><svg width="17" height="17"><use href="#u-lock"/></svg></div>
+          <h4>Your work lives on someone's cloud</h4>
+          <p>Client files, contracts, raw footage — all sitting on a service you don't control, priced per seat, indexed by machines you'll never see.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW -->
+  <section id="how">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-k">How it works</div>
+        <h2>Point it at your folders. That's the setup.</h2>
+        <p>No migration, no re-uploading, no reorganizing. SourceBox reads what you already have and makes it findable and shareable in minutes.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="num">01 — Point</div>
+          <h3>Add a folder or repo</h3>
+          <p>Give it a path on your computer, or paste a git URL to clone. Files stay exactly where they are — nothing is duplicated. A watcher picks up every change on its own.</p>
+          <div class="ex">C:\Work\<b>Clients</b> &nbsp;·&nbsp; git@…/brand.git</div>
+        </div>
+        <div class="step reveal">
+          <div class="num">02 — Find</div>
+          <h3>Describe what you want</h3>
+          <p>Type the way you'd say it. SourceBox understands synonyms, short forms and typos across any kind of file, then previews images, PDFs, video, docs and more right in the browser.</p>
+          <div class="ex">"<b>signed contract pdf</b>" &nbsp;·&nbsp; "<b>product photos</b>"</div>
+        </div>
+        <div class="step reveal">
+          <div class="num">03 — Share</div>
+          <h3>Hand over one folder</h3>
+          <p>Create a link to a single folder with its own passcode, an expiry date, and downloads on or off. The recipient sees that folder and nothing else. Revoke it any time.</p>
+          <div class="ex">one folder · <b>passcode</b> · expires in 7 days</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-k">What's inside</div>
+        <h2>A real tool, not a folder with a search box.</h2>
+        <p>Everything you need to run a shared library of files from your own machine.</p>
+      </div>
+      <div class="feat">
+        <div class="f reveal"><div class="ic"><svg><use href="#u-search"/></svg></div><h4>Plain-language search</h4><p>Describe a file in everyday words. Synonyms, abbreviations and typos all resolve to the right result — in any industry's vocabulary.</p></div>
+        <div class="f reveal"><div class="ic"><svg><use href="#u-folder"/></svg></div><h4>Reads folders in place</h4><p>Your files aren't imported or moved. SourceBox reads them where they live and notices changes within seconds.</p></div>
+        <div class="f reveal"><div class="ic"><svg><use href="#u-eye"/></svg></div><h4>Preview almost anything</h4><p>Images, SVG, PDF, video, markdown, code and HTML render in the browser. No need to download to take a look.</p></div>
+        <div class="f reveal"><div class="ic"><svg><use href="#u-share"/></svg></div><h4>Curated share links</h4><p>Per-folder links with a passcode, an expiry and a download toggle. Share exactly one folder, nothing more.</p></div>
+        <div class="f reveal"><div class="ic"><svg><use href="#u-sync"/></svg></div><h4>Git-aware sync</h4><p>Point it at a repo and it follows along — safely fast-forwarding to new commits and never touching your uncommitted work.</p></div>
+        <div class="f reveal"><div class="ic"><svg><use href="#u-swatch"/></svg></div><h4>See inside files</h4><p>Pull the real colours out of any image, read a file's git history, and copy an image straight to your clipboard.</p></div>
+        <div class="f reveal"><div class="ic"><svg><use href="#u-bolt"/></svg></div><h4>Starred &amp; recent</h4><p>Star what you reach for daily; recents follow you per device. Grid or list, keyboard-driven, fast on a phone over Wi-Fi.</p></div>
+        <div class="f reveal"><div class="ic"><svg><use href="#u-swatch"/></svg></div><h4>Make it yours</h4><p>Rename the vault, set your own accent colour and theme. Light, dark, or whatever your device is doing.</p></div>
+        <div class="f reveal"><div class="ic"><svg><use href="#u-lock"/></svg></div><h4>Local accounts</h4><p>An email and password each, stored on your own disk. The first account owns the vault; the owner passcode invites the rest.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEAMS -->
+  <section id="teams">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-k">Not built for one industry</div>
+        <h2>If you keep files and share some of them, it fits.</h2>
+        <p>The same engine — point, find, share, stay in sync — works for whatever your files happen to be. A few of the ways teams use it:</p>
+      </div>
+      <div class="aud">
+        <div class="aud-c reveal"><span class="ab">Studios</span><div><h4>Design &amp; brand assets</h4><p>Logos, source files and templates, delivered to clients one project at a time.</p></div></div>
+        <div class="aud-c reveal"><span class="ab">Photo</span><div><h4>Client galleries</h4><p>Hand over a shoot as a passcoded, expiring folder — downloads on or off.</p></div></div>
+        <div class="aud-c reveal"><span class="ab">Legal</span><div><h4>Document rooms</h4><p>Share one matter folder privately, set an expiry, keep everything on-premise.</p></div></div>
+        <div class="aud-c reveal"><span class="ab">Finance</span><div><h4>Statements &amp; invoices</h4><p>Find any bill or report by description; release just the right folder to a client.</p></div></div>
+        <div class="aud-c reveal"><span class="ab">Engineering</span><div><h4>A window into a repo</h4><p>Give the non-technical half of the team a browsable view of a git project.</p></div></div>
+        <div class="aud-c reveal"><span class="ab">Educators</span><div><h4>Course material</h4><p>Give a cohort one folder of resources, set to expire at the end of term.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRIVATE -->
+  <section id="private">
+    <div class="wrap">
+      <div class="band reveal">
+        <div class="sec-k">Private by construction</div>
+        <h2>The only copy of your files is the one you already have.</h2>
+        <p class="lead">SourceBox runs as a small server on your own machine. There's no cloud to sign into and nothing phones home &mdash; your account is a row in a file on your own disk, not a record in someone else's database. Share over your local Wi-Fi, or open a temporary public link only when you choose to.</p>
+        <ul class="band-list">
+          <li><div class="t"><span class="c"><svg width="16" height="16"><use href="#u-check"/></svg></span> Your account, on your disk</div><p>An email and a salted hash in <span class="mono">data/users.json</span>. No vendor, no verification email, no third party.</p></li>
+          <li><div class="t"><span class="c"><svg width="16" height="16"><use href="#u-check"/></svg></span> Nothing leaves unasked</div><p>No telemetry, no analytics, no background uploads. Files are served from disk, to you.</p></li>
+          <li><div class="t"><span class="c"><svg width="16" height="16"><use href="#u-check"/></svg></span> You hold the keys</div><p>Owner passcode for the vault; separate passcodes, expiries and revocation for every shared link.</p></li>
+        </ul>
+      </div>
+
+      <div class="specs">
+        <div class="spec"><div class="v"><em>0</em></div><div class="l">Files copied or uploaded</div></div>
+        <div class="spec"><div class="v"><em>~1.5</em>s</div><div class="l">To notice a changed file</div></div>
+        <div class="spec"><div class="v">Any</div><div class="l">File type, any industry</div></div>
+        <div class="spec"><div class="v"><em>1</em> min</div><div class="l">From install to first search</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACCOUNT -->
+  <section id="account">
+    <div class="wrap acct-grid">
+      <div class="reveal">
+        <div class="sec-k">Sign in</div>
+        <h2>One account each, instead of one shared secret.</h2>
+        <p style="margin-top:18px;color:var(--ink-2);font-size:18px;max-width:52ch">
+          Everyone who works out of the vault gets their own email and password. It stays
+          entirely local: the accounts live in a file next to your projects, and nothing is
+          sent anywhere to create one.
+        </p>
+        <ul class="acct-points">
+          <li>
+            <span class="c"><svg><use href="#u-check"/></svg></span>
+            <div><b>The first account owns the vault</b>
+            <p>Whoever signs up first on a fresh install becomes the owner. Nothing else to configure.</p></div>
+          </li>
+          <li>
+            <span class="c"><svg><use href="#u-check"/></svg></span>
+            <div><b>After that, the vault passcode is the invitation</b>
+            <p>A second account can only be created by someone who knows the owner passcode, so a vault reachable over Wi-Fi or a public link cannot be signed into by a stranger.</p></div>
+          </li>
+          <li>
+            <span class="c"><svg><use href="#u-lock"/></svg></span>
+            <div><b>Passwords are never stored</b>
+            <p>Only a scrypt hash with a per-account salt. Sign-in attempts are rate limited, and a session is a signed, http-only cookie that lasts 30 days.</p></div>
+          </li>
+          <li>
+            <span class="c"><svg><use href="#u-bolt"/></svg></span>
+            <div><b>The passcode still works</b>
+            <p>Accounts sit on top of the owner passcode, they do not replace it. You can still unlock the vault with the passcode alone, which is handy on a phone or if a password is forgotten.</p></div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="auth-card reveal" id="auth-card">
+        <!-- already signed in -->
+        <div id="auth-known" class="hide">
+          <h3>You are signed in</h3>
+          <div class="who">
+            <span class="av" id="who-av">S</span>
+            <div><div class="nm" id="who-name">&mdash;</div><div class="em" id="who-email">&mdash;</div></div>
+          </div>
+          <a class="btn btn-primary" href="/">Open the vault</a>
+          <div class="auth-foot"><a href="#account" id="do-logout">Sign out of this device</a></div>
+        </div>
+
+        <!-- log in / sign up -->
+        <div id="auth-forms">
+          <h3 id="auth-title">Log in</h3>
+          <p class="sub" id="auth-sub">Use the account you created on this machine.</p>
+
+          <div class="seg" role="tablist" aria-label="Log in or sign up">
+            <button type="button" id="tab-login" role="tab" aria-selected="true" aria-controls="auth-form">Log in</button>
+            <button type="button" id="tab-signup" role="tab" aria-selected="false" aria-controls="auth-form">Sign up</button>
+          </div>
+
+          <form id="auth-form" autocomplete="on">
+            <div class="fld hide" id="f-name">
+              <label for="in-name">Name</label>
+              <input id="in-name" name="name" type="text" autocomplete="name" placeholder="Your name">
+            </div>
+            <div class="fld">
+              <label for="in-email">Email</label>
+              <input id="in-email" name="email" type="email" autocomplete="username" placeholder="you@example.com" required>
+            </div>
+            <div class="fld">
+              <label for="in-pass">Password</label>
+              <input id="in-pass" name="password" type="password" autocomplete="current-password" placeholder="Your password" required>
+              <div class="hint hide" id="pass-hint">At least 8 characters. Stored only as a salted hash.</div>
+            </div>
+            <div class="fld hide" id="f-code">
+              <label for="in-code">Vault passcode</label>
+              <input id="in-code" name="passcode" type="password" autocomplete="off" placeholder="The owner passcode">
+              <div class="hint">This vault already has an owner, so a new account needs the passcode as an invitation.</div>
+            </div>
+            <button class="btn btn-primary" type="submit" id="auth-go">Log in</button>
+            <div class="auth-msg" id="auth-msg" role="status" aria-live="polite"></div>
+          </form>
+
+          <div class="auth-foot" id="auth-foot">
+            Prefer the old way? <a href="/">Unlock with the vault passcode</a> instead.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-final">
+    <div class="wrap">
+      <h2>Your files, finally <em>findable.</em></h2>
+      <p>Keep everything where it is. Make it searchable, previewable and shareable — without giving it to anyone else's cloud.</p>
+      <div class="cmd"><span class="pr">$</span> npm start <span style="color:var(--ink-3)">→ localhost:4477</span></div>
+      <div style="margin-top:28px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a class="btn btn-primary" id="cta-signup" href="#account">Create your account</a>
+        <a class="btn" href="/">Open the vault</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <a class="brand" href="#top"><span class="tile"><svg viewBox="0 0 32 32" fill="none"><path d="M9 12h5l2 2.4h7v9.6H9z" fill="#fff"/></svg></span>SourceBox</a>
+    <span class="mono">A private, self-hosted asset drive · runs on your machine</span>
+  </div>
+</footer>
+
+<script>
+  document.documentElement.classList.add('js');
+
+  /* Scroll reveals */
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.14, rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+
+  /* ------------------------------------------------------------ accounts
+   * The sign-in card. It asks the server what state this vault is in first:
+   * a fresh install is offered "create the owner account", an install that
+   * already has one is offered a login, and a visitor who is already signed
+   * in is just shown the way back into the vault.
+   */
+  (function () {
+    var $ = function (id) { return document.getElementById(id); };
+    var state = { accounts: null, needsFirstAccount: false, mode: 'login', busy: false };
+
+    function show(el, on) { el.classList.toggle('hide', !on); }
+
+    function setMsg(text, kind) {
+      var msg = $('auth-msg');
+      msg.textContent = text || '';
+      msg.className = 'auth-msg' + (kind ? ' ' + kind : '');
+    }
+
+    function paintSignedIn(user) {
+      show($('auth-forms'), false);
+      show($('auth-known'), true);
+      var name = (user && user.name) || 'Vault owner';
+      $('who-name').textContent = name + (user && user.role === 'owner' ? ' \u00b7 owner' : '');
+      $('who-email').textContent = (user && user.email) || 'signed in with the vault passcode';
+      $('who-av').textContent = name.trim().charAt(0).toUpperCase() || 'S';
+      $('nav-cta').textContent = 'Open the vault';
+      $('nav-cta').setAttribute('href', '/');
+      show($('nav-login'), false);
+      $('hero-cta').textContent = 'Open the vault';
+      $('hero-cta').setAttribute('href', '/');
+      show($('hero-login'), false);
+      $('cta-signup').textContent = 'Open the vault';
+      $('cta-signup').setAttribute('href', '/');
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      var signup = mode === 'signup';
+      $('tab-login').setAttribute('aria-selected', String(!signup));
+      $('tab-signup').setAttribute('aria-selected', String(signup));
+      show($('f-name'), signup);
+      show($('pass-hint'), signup);
+      // The passcode acts as the invitation, but only once an owner exists.
+      show($('f-code'), signup && !state.needsFirstAccount);
+      $('in-name').required = signup;
+      $('in-pass').setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
+      $('auth-title').textContent = signup
+        ? (state.needsFirstAccount ? 'Create the owner account' : 'Create an account')
+        : 'Log in';
+      $('auth-sub').textContent = signup
+        ? (state.needsFirstAccount
+            ? 'This vault has no account yet. The first one created owns it.'
+            : 'You will need the vault passcode to join this vault.')
+        : 'Use the account you created on this machine.';
+      $('auth-go').textContent = signup ? 'Create account' : 'Log in';
+      setMsg('');
+    }
+
+    function navTo(mode) {
+      setMode(mode);
+      $('auth-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(function () { $(mode === 'signup' ? 'in-name' : 'in-email').focus(); }, 420);
+    }
+
+    function post(url, body) {
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (data) {
+          return { status: r.status, data: data };
+        });
+      });
+    }
+
+    $('tab-login').addEventListener('click', function () { setMode('login'); });
+    $('tab-signup').addEventListener('click', function () { setMode('signup'); });
+    $('nav-login').addEventListener('click', function () { navTo('login'); });
+    $('hero-login').addEventListener('click', function () { navTo('login'); });
+    $('nav-cta').addEventListener('click', function (e) {
+      if (this.getAttribute('href') === '#account') navTo(state.accounts ? 'login' : 'signup');
+    });
+    $('hero-cta').addEventListener('click', function () {
+      if (this.getAttribute('href') === '#account') navTo('signup');
+    });
+    $('cta-signup').addEventListener('click', function () {
+      if (this.getAttribute('href') === '#account') navTo('signup');
+    });
+
+    $('do-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      post('/api/auth/logout', {}).then(function () { location.reload(); });
+    });
+
+    $('auth-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (state.busy) return;
+      var signup = state.mode === 'signup';
+      var body = {
+        email: $('in-email').value.trim(),
+        password: $('in-pass').value
+      };
+      if (signup) {
+        body.name = $('in-name').value.trim();
+        body.passcode = $('in-code').value;
+      }
+      state.busy = true;
+      $('auth-go').disabled = true;
+      setMsg(signup ? 'Creating your account\u2026' : 'Signing in\u2026');
+
+      post(signup ? '/api/auth/signup' : '/api/auth/login', body).then(function (r) {
+        state.busy = false;
+        $('auth-go').disabled = false;
+        if (r.status === 200) {
+          setMsg('Done. Opening the vault\u2026', 'good');
+          location.href = '/';
+          return;
+        }
+        // A vault that gained its first account while this page was open.
+        if (r.data && r.data.needsPasscode) {
+          state.needsFirstAccount = false;
+          show($('f-code'), true);
+        }
+        setMsg((r.data && r.data.error) || 'That did not work. Try again.', 'err');
+        $('in-pass').select();
+      }).catch(function () {
+        state.busy = false;
+        $('auth-go').disabled = false;
+        setMsg('Could not reach the vault. Is the server still running?', 'err');
+      });
+    });
+
+    fetch('/api/auth/state').then(function (r) { return r.json(); }).then(function (st) {
+      state.accounts = st.accounts;
+      state.needsFirstAccount = !!st.needsFirstAccount;
+      if (st.signedIn) { paintSignedIn(st.user); return; }
+
+      show($('nav-login'), true);
+      if (state.needsFirstAccount) {
+        // Nobody owns this vault yet, so signing up is the only useful door.
+        setMode('signup');
+        $('nav-cta').textContent = 'Create the owner account';
+        $('hero-cta').textContent = 'Create the owner account';
+        // Nothing to log into yet, so the login doors are not offered.
+        show($('nav-login'), false);
+        show($('hero-login'), false);
+        $('auth-foot').innerHTML =
+          'Just installed? The server printed a passcode in its terminal window &mdash; ' +
+          'you can also <a href="/">unlock with that</a> and create your account later.';
+      } else {
+        setMode('login');
+      }
+      // A link straight to #account/#signup lands on the right tab.
+      if (location.hash === '#signup') navTo('signup');
+    }).catch(function () {
+      setMsg('Could not reach the vault. Start the server, then reload this page.', 'err');
+    });
+  })();
+
+  /* Hero: type a plain-language query, then surface matching tiles. */
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var TILES = [
+    { tag: 'PDF',  bg: 'linear-gradient(140deg,#c4410f,#7a2a0a)', fg: '#ffd9c6', name: 'Q3-invoice-acme', ext: '.pdf' },
+    { tag: 'XLSX', bg: 'linear-gradient(140deg,#2f6b45,#163726)', fg: '#c8f0d8', name: 'revenue-2024',    ext: '.xlsx' },
+    { tag: 'PDF',  bg: 'linear-gradient(140deg,#c4410f,#7a2a0a)', fg: '#ffd9c6', name: 'invoice-northwind',ext: '.pdf' },
+    { tag: 'PNG',  bg: 'linear-gradient(140deg,#355b8c,#1b2d47)', fg: '#cfe0f5', name: 'receipt-scan-08',  ext: '.png' },
+    { tag: 'DOCX', bg: 'linear-gradient(140deg,#4a4f57,#282b30)', fg: '#dfe3e8', name: 'billing-summary',  ext: '.docx' },
+    { tag: 'PDF',  bg: 'linear-gradient(140deg,#c4410f,#7a2a0a)', fg: '#ffd9c6', name: 'tax-invoice-may',  ext: '.pdf' }
+  ];
+  var query = 'last quarter invoice';
+  var typed = document.getElementById('typed');
+  var tilesEl = document.getElementById('tiles');
+
+  function renderTiles() {
+    tilesEl.innerHTML = '';
+    TILES.forEach(function (t, i) {
+      var el = document.createElement('div');
+      el.className = 'tile';
+      el.style.animationDelay = (reduce ? 0 : 0.06 * i) + 's';
+      el.innerHTML =
+        '<div class="thumb" style="background:' + t.bg + ';color:' + t.fg + '">' + t.tag + '</div>' +
+        '<div class="cap"><b>' + t.name + '</b>' + t.ext + '</div>';
+      tilesEl.appendChild(el);
+    });
+  }
+
+  if (reduce) {
+    typed.textContent = query;
+    renderTiles();
+  } else {
+    var i = 0;
+    (function tick() {
+      if (i <= query.length) {
+        typed.textContent = query.slice(0, i);
+        i++;
+        setTimeout(tick, 58 + Math.random() * 46);
+      } else {
+        setTimeout(renderTiles, 240);
+      }
+    })();
+  }
+</script>
+</body>
+</html>

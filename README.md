@@ -1,283 +1,398 @@
-# Asset Vault
+# SourceBox
 
-A private, passcode-protected drive for design and brand assets. Add any number of
-projects, search them in plain language, preview almost anything in the browser, and hand
-a client a link that shows them one folder and nothing else.
+A private, self-hosted drive for your files. Point it at folders you already have, find
+anything by describing it in plain language, preview almost any file in the browser, and
+hand someone a single folder through a secure link — all from a small server that runs on
+your own machine.
 
-Projects stay where they already live. The vault reads your folders in place, so nothing
-is duplicated, and it notices changes on its own. Point it at a git repo and it keeps
+Your files stay where they live. SourceBox reads your folders in place, so nothing is
+duplicated, and it notices changes on its own. Point it at a git repository and it keeps
 itself up to date with the remote.
+
+It isn't tied to any one industry. Whether the files are brand assets, invoices, contracts,
+photo shoots, course material, or a project repo, the same four things apply: point, find,
+preview, share.
 
 ---
 
-## Ek nazar me
+## At a glance
 
 | | |
 |---|---|
-| **Koi bhi project** | Local folder register kijiye, git repo clone kijiye, ya khaali project banaake upload kijiye |
-| **Auto update** | Folder watcher + git polling. Rescan dabane ki zarurat nahi |
-| **Layman search** | `red wala logo`, `insta post hindi`, `tshirt print file`. Hinglish, short forms, typos |
+| **Any project** | Register a local folder, clone a git repo, or create an empty project and upload to it |
+| **Auto update** | A folder watcher plus git polling. No need to press rescan |
+| **Plain-language search** | Type the way you'd describe a file out loud. Understands synonyms, short forms and typos across any kind of file |
 | **Preview** | Images, SVG, PDF, AI, video, markdown, code, HTML |
-| **Share** | Per-folder link with its own passcode, expiry, aur download on/off |
-| **Private** | Sab kuch aapki machine pe. Koi cloud, koi account, koi telemetry |
+| **Colours** | The real hex codes inside any image — click to copy |
+| **File history** | Every commit that touched a file, in a git-backed project |
+| **Starred / Recent** | Star what you reach for daily; recents follow you per device |
+| **Share** | Per-folder link with its own passcode, expiry, and downloads on or off |
+| **Accounts** | An email and password per person, stored on your own disk. First account owns the vault |
+| **Themeable** | Rename the vault, pick an accent colour and a preset, choose Light / Dark / System |
+| **Private** | Everything on your machine. No cloud, no vendor account, no telemetry |
 
 ---
 
-## Chalu kaise karein
+## Getting started
 
-Chahiye: **Node.js 18+** aur (git features ke liye) **git**.
+You need **Node.js 18+** and, for the git features, **git**.
 
 ```
 npm install
 npm start
 ```
 
-Ya Windows pe seedha **`Start Vault.bat`** pe double click.
+Or on Windows, double-click **`Start Vault.bat`**.
 
-Pehli baar chalane pe terminal me aisa kuch dikhega:
+The first run prints something like this in the terminal:
 
 ```
-  Asset Vault is running
+  SourceBox is running
   Local:   http://localhost:4477
   Network: http://192.168.1.20:4477
 
-  First run. Aapka passcode:  k7ra-9mqp
+  First run. Your passcode:  k7ra-9mqp
 ```
 
-Wo passcode note kar lijiye, login kijiye, aur Settings me jaake apna set kar lijiye.
-Har install pe ye passcode alag generate hota hai, kahin hardcoded nahi hai.
+Note that passcode, sign in, and set your own in **Settings**. The passcode is generated
+fresh for every install — it is never hardcoded.
+
+Then open the product page at `http://localhost:4477/product` and create your account.
 
 ---
 
-## Project add karne ke teen tareeke
+## Accounts
 
-Sidebar me **Projects** ke aage `+`, ya khaali vault pe seedha cards dikhte hain.
+The vault has two ways in, and they work together.
 
-### 1. Is PC ka folder
-Folder ka poora path dijiye, jaise `C:\Users\You\Desktop\ClientProject`.
-Files **copy nahi hoti**. Vault wahi se padhta hai, aur us folder pe watcher laga deta hai.
-Agar wo folder git repo hua to git sync khud chalu ho jayega.
+**The owner passcode** unlocks the whole vault on its own. It is printed on first run,
+changed in Settings, and is what the lock screen at `/` asks for.
 
-### 2. Git repo se clone
-Repo ka URL paste kijiye (`https://github.com/user/repo.git` ya `git@github.com:user/repo.git`).
+**An account** is an email and a password, one per person. Sign up and log in on the
+product page at `/product#account` — the same page that describes the product, which is
+why it sits outside the passcode.
 
-- **Repo check karein** dabaake pehle confirm kar lijiye ki repo mil raha hai aur kaunsi
-  branches hain. Ye kuch second me pata chal jata hai, poora clone shuru karne se pehle.
-- Clone vault ke apne `storage/repos/` me hota hai, progress bar ke saath.
-- Uske baad wo project normal project ki tarah behave karta hai, aur naye commits apne aap
-  pull hote rehte hain.
-
-**Private repos:** agar aapke system ke git me pehle se GitHub login hai (Windows
-Credential Manager ya SSH key), to kuch nahi chahiye. Warna ek Personal Access Token
-field hai. Token clone ke remote URL me save hota hai (standard git behaviour) taaki baad
-ke fetch bhi chalte rahein, aur UI me kabhi display nahi hota.
-
-### 3. Khaali project
-Naam dijiye, project ban jayega, phir Upload se files ya poora folder drag-drop kar dijiye.
-
----
-
-## Apne aap update hona
-
-Do cheezein background me chalti hain. Dono ke liye aapko kuch nahi karna.
-
-**Folder watch (turant).** Har project root pe recursive watcher. Aap commit karein, branch
-switch karein, Illustrator se save karein, ya Explorer se file daalein: vault 1.5 second me
-re-index kar leta hai aur khuli hui browser tabs khud badal jaati hain. Koi reload nahi.
-
-**Git polling (har 5 minute).** Jo project git repo hai, uske liye background me `git fetch`.
-Naye commits milte hi safe pull karke re-index, aur toast dikhta hai.
-
-Sidebar me git strip: branch, aakhri commit, local changes, last check ka time,
-**Check now** button aur **Auto** toggle.
-
-### Aapka kaam kabhi overwrite nahi hoga
-
-Auto pull tabhi chalta hai jab dono sach hon:
-
-- working tree **clean** ho (koi uncommitted change na ho)
-- pull **fast-forward** ho (branch diverge na hui ho)
-
-Warna vault kuch nahi karta, sirf bata deta hai: *"13 local changes pending hain, isliye
-pull nahi kiya"* ya *"branch diverge ho gayi hai"*. Vault kabhi `push`, `commit`, `merge`,
-ya `rebase` nahi karta. Sirf `fetch` aur `merge --ff-only`. Merge conflicts ya lost work ka
-risk nahi.
-
----
-
-## Link share karna
-
-Kisi bhi folder me jaayiye, upar right me **Share**.
-
-| Option | Matlab |
+| | |
 |---|---|
-| Folder | Client ko sirf yahi folder dikhega, baaki poora vault chhupa rahega |
-| Passcode | Khaali chhoda to bina passcode khulega |
-| Expire | Kitne din baad link apne aap band ho jaye |
-| Download allow | Off kiya to client dekh sakta hai, download nahi kar sakta |
+| First account | Whoever signs up first on a fresh install becomes the **owner** |
+| Later accounts | Need the owner passcode as an invitation, so nobody on your Wi-Fi or on a public link can sign themselves up |
+| Storage | `data/users.json`, next to your projects. A name, an email, and a scrypt hash with a per-account salt — never the password |
+| Session | A signed, http-only cookie, good for 30 days. Deleting an account ends its open sessions immediately |
+| Rate limit | Eight failed logins per email from one address closes that door for 15 minutes |
+| Roles | `owner` and `member`. Both see the whole vault; only the owner can remove accounts |
 
-Saare links **Links** button (bottom-left) me dikhte hain, wahan se copy ya revoke.
-Revoke karte hi link turant band.
+Members see everything in the vault — the roles separate who may remove accounts, not who
+may read which project. If you need per-person file permissions, this isn't that yet.
 
-### Same wifi pe
-Server start hote hi `Network: http://192.168.x.x:4477` dikhta hai. Wahi address office ke
-kisi bhi device pe khulega.
+Nothing here reaches a network. There is no verification email, no password reset link and
+no vendor: an account is a local credential, the same way the passcode is. If a password is
+forgotten, unlock the vault with the owner passcode instead, and remake the account.
 
-### Internet pe
-Ek baar:
+### Account endpoints
+
+| Method | Path | Does |
+|---|---|---|
+| `GET` | `/api/auth/state` | Whether this vault has any account, and who is signed in |
+| `POST` | `/api/auth/signup` | `{ name, email, password, passcode? }` |
+| `POST` | `/api/auth/login` | `{ email, password }` |
+| `POST` | `/api/auth/logout` | Ends the session |
+| `GET` | `/api/auth/users` | Everyone with an account |
+| `POST` | `/api/auth/password` | `{ current, next }` for the signed-in account |
+| `DELETE` | `/api/auth/users/:id` | Owner only; the owner account cannot be removed |
+
+---
+
+## Three ways to add a project
+
+Click the `+` next to **Projects** in the sidebar, or use the cards shown on an empty vault.
+
+### 1. A folder on this computer
+Give the full path, for example `C:\Users\You\Desktop\ClientProject`. Files are **not
+copied** — SourceBox reads them where they are and puts a watcher on the folder. If that
+folder is a git repo, git sync turns on automatically.
+
+### 2. Clone a git repo
+Paste the repo URL (`https://github.com/user/repo.git` or `git@github.com:user/repo.git`).
+
+- **Check repo** confirms the repo is reachable and lists its branches in a few seconds,
+  before a full clone begins.
+- The clone lands in the vault's own `storage/repos/`, with a progress bar.
+- From then on it behaves like any project, and new commits are pulled automatically.
+
+**Private repos:** if your system git is already signed in to GitHub (Windows Credential
+Manager or an SSH key), nothing more is needed. Otherwise there is a Personal Access Token
+field. The token is saved into the clone's remote URL (standard git behaviour) so later
+fetches keep working, and it is never shown in the UI.
+
+### 3. Empty project
+Give it a name and it's created; then use Upload to drag in files or a whole folder.
+
+---
+
+## Staying up to date
+
+Two things run in the background. Neither needs anything from you.
+
+**Folder watch (instant).** A recursive watcher on each project root. Commit, switch
+branches, save from another app, or drop a file into the folder, and SourceBox re-indexes
+within about 1.5 seconds. Open browser tabs update themselves — no reload.
+
+**Git polling (every 5 minutes).** For git-backed projects, a background `git fetch`. When
+new commits arrive it safely pulls, re-indexes, and shows a toast.
+
+The sidebar git strip shows the branch, last commit, local changes, the time of the last
+check, a **Check now** button and an **Auto** toggle.
+
+### Your work is never overwritten
+
+Auto pull runs only when both are true:
+
+- the working tree is **clean** (no uncommitted changes), and
+- the pull is a **fast-forward** (the branch hasn't diverged).
+
+Otherwise SourceBox does nothing and simply tells you why: *"13 local changes pending, so
+no pull"* or *"the branch has diverged"*. It never runs `push`, `commit`, `merge`, or
+`rebase` — only `fetch` and `merge --ff-only`. No merge conflicts, no lost work.
+
+---
+
+## Sharing a link
+
+Open any folder and click **Share** at the top right.
+
+| Option | What it does |
+|---|---|
+| Folder | The recipient sees only this folder; the rest of the vault stays hidden |
+| Passcode | Leave blank to open without a passcode |
+| Expiry | How many days until the link closes itself |
+| Allow downloads | Turn off and the recipient can view but not download |
+
+Every link appears under the **Links** button (bottom-left), where you can copy or revoke
+it. Revoking closes the link immediately.
+
+### On the same network
+When the server starts it prints `Network: http://192.168.x.x:4477`. That address opens on
+any device on the same Wi-Fi.
+
+### Over the internet
+Once:
 
 ```
 winget install --id Cloudflare.cloudflared
 ```
 
-Phir jab bhi link chahiye: `Start Vault.bat` chalu rakhiye aur `Share Online.bat` pe double
-click. `https://kuch-kuch.trycloudflare.com` jaisa link milega. Dono windows khuli rehni
-chahiye.
+Then, whenever you need a public link, keep `Start Vault.bat` running and double-click
+`Share Online.bat`. You'll get a `https://something.trycloudflare.com` link. Both windows
+need to stay open.
 
 ---
 
-## Search kaise likhein
+## How to search
 
-Filename yaad rakhne ki zarurat nahi. Aise likhiye jaise bol rahi hon:
+You don't have to remember filenames. Type the way you'd describe a file:
 
 ```
-red wala logo              insta post hindi          tshirt print file
-mujhe kala logo chahiye    whatsapp status           editable source file
-visiting card              youtube banner            sare pdf
+red logo                signed contract pdf       product photos
+last quarter invoice    whatsapp status           editable source file
+business card           revenue spreadsheet        all pdfs
 ```
 
-Search Hinglish samajhta hai (`lal`, `kala`, `lifafa`, `sare`), short forms samajhta hai
-(`ig`, `fb`, `yt`, `wa`, `vc`), aur typo bhi chala leta hai (`logoo`, `instgram`).
-Kuch na mile to "did you mean" suggestions aa jaate hain.
+Search understands synonyms across many domains (invoice/bill/receipt, contract/agreement,
+report/summary, logo/mark, photo/picture…), short forms (`ig`, `fb`, `yt`, `vc`), and
+typos (`logoo`, `invoic`). When nothing matches, it offers "did you mean" suggestions.
 
-Browse karte waqt sirf current folder ki files dikhti hain, lekin search us folder ke andar
-sab kuch dhoondhta hai. Poore project me dhoondhna ho to breadcrumb me project ke naam pe
-click kar lijiye.
+While browsing you see only the current folder's files, but search looks through everything
+inside that folder. To search the whole project, click the project name in the breadcrumb.
 
 ---
 
-## Shortcuts
+## Keyboard shortcuts
 
-| Key | Kaam |
+| Key | Action |
 |---|---|
-| `/` | Search pe jump |
-| `g` / `l` | Grid / List view |
+| `?` | This list, inside the app |
+| `/` | Jump to search |
+| Arrow keys | Move in the grid (or previous/next file when a preview is open) |
+| `Enter` | Open whatever the cursor is on — folder or file |
+| `Space` | Select / deselect |
+| `s` | Star |
+| `Backspace` | Up one folder |
+| `g` / `l` | Grid / list view |
 | Click | Preview |
 | Ctrl+click | Select |
 | Shift+click | Range select |
-| Ctrl+A | Sab select |
-| Arrow keys | Preview me agli/pichli file |
-| `Esc` | Band karna |
+| Ctrl+A | Select all |
+| `Esc` | Close |
 
-Select karne ke baad niche bar aata hai: **Download zip** se saari selected files ek zip me.
+With files selected, a bar appears at the bottom: **Download zip** puts every selected file
+into a single zip.
+
+---
+
+## Views: Starred and Recent
+
+The sidebar has a **Views** section — three routes into one project:
+
+| View | Shows |
+|---|---|
+| **All files** | The folder you're standing in |
+| **Starred** | Everything you've starred across the project |
+| **Recent** | What you opened lately, newest first |
+
+Star in two ways: the star button on a card, or hover and press `s`. Stars are saved on the
+server, so they show up on your laptop and your phone alike. Recent lives in your browser,
+because "what did I just look at" is specific to that browser.
+
+---
+
+## Colours and file history
+
+Open any image or SVG and the right-hand panel shows:
+
+- **Colours** — the real dominant hex codes in that file, with coverage %. Click to copy.
+  No need to open a design tool and use an eyedropper.
+- **History** — in a git-backed project, the commits that touched that one file.
+- **Copy image** — the picture itself onto the clipboard, to paste straight into a deck or
+  chat.
+
+---
+
+## Appearance and theme
+
+In **Settings** you can:
+
+- **Rename the vault** — the name shows in the sidebar, the lock screen, and share links.
+- **Choose Light / Dark / System** — "System" follows your device; your choice is
+  remembered per device.
+- **Set colours** — pick an accent, a folder colour, and a page background by hand, or tap
+  a preset (Indigo, Orange, Blue, Teal, Emerald, Violet, Rose, Graphite). Colours are saved
+  on the server, so every device and every share link shows the same look.
+
+---
+
+## Product page
+
+`http://localhost:4477/product` (also `/usp`) — what SourceBox is, in one page: the problem
+it solves, how it works, every feature, who it's for, how it stays private, and the sign-in
+and sign-up forms. It sits outside the passcode because it describes the vault without
+showing anything in it, and because it is where accounts are created.
 
 ---
 
 ## Preview support
 
-| Type | Kya hota hai |
+| Type | What happens |
 |---|---|
-| PNG, JPG, SVG, WEBP, GIF | Poora preview, aur background swatch (checker / white / cream / black / red) badal ke dekh sakti hain |
-| PDF, AI, EPS | Browser me page-by-page render (AI tabhi jab "PDF Compatible" save kiya ho) |
+| PNG, JPG, SVG, WEBP, GIF | Full preview, with a background swatch you can switch (checker / white / cream / black / red) |
+| PDF, AI, EPS | Rendered page by page in the browser (AI only when saved "PDF Compatible") |
 | MP4, WEBM, MOV | Inline player |
 | MD, TXT, JSON, CSV, code | Text view |
 | HTML | Sandboxed iframe |
-| PSD, INDD, ZIP, fonts | Preview nahi, sirf download |
+| PSD, INDD, ZIP, fonts | No preview — download only |
 
-Thumbnails server pe banti hain (sharp se), aur jo server nahi bana sakta (PDF, AI, video)
-wo browser render karke server ko wapas bhej deta hai, taaki agli baar sabke liye instant ho.
+Thumbnails are made on the server (with sharp), and the ones the server can't make (PDF, AI,
+video) are rendered by the browser and sent back, so the next person gets them instantly.
 
 ---
 
 ## Configuration
 
-| Env var | Default | Kaam |
+| Env var | Default | Purpose |
 |---|---|---|
-| `PORT` | `4477` | Kis port pe chale |
-| `VAULT_DATA_DIR` | repo folder | Kahan `data/`, `cache/`, `storage/` rakhe |
+| `PORT` | `4477` | Which port to run on |
+| `VAULT_DATA_DIR` | repo folder | Where to keep `data/`, `cache/`, `storage/` |
 
-`VAULT_DATA_DIR` se aap state ko doosri drive pe rakh sakti hain, ya ek hi code se do
-alag-alag vault chala sakti hain.
+`VAULT_DATA_DIR` lets you keep state on another drive, or run two separate vaults from one
+codebase.
 
 ---
 
-## Kya kahan rehta hai
+## What lives where
 
 ```
 AssetVault/
-  server.js            HTTP server aur saare API endpoints
+  server.js            HTTP server and all API endpoints
   lib/
     config.js          passcode, project list, settings
-    indexer.js         folder scan aur file catalog
+    theme.js           accent / folder / background colours
+    indexer.js         folder scan and file catalog
     shares.js          share links
-    thumbs.js          thumbnail generation aur cache
+    thumbs.js          thumbnail generation and cache
     auth.js            signed cookie sessions
+    users.js           accounts: email, scrypt-hashed password, roles
     git.js             git status / probe / clone / safe fast-forward pull
     sync.js            folder watcher, git poller, clone jobs, live events
-  public/              browser app
-    search.js          fuzzy + synonym search engine
-  scripts/tunnel.js    public link banane wala script
-  tests/               npm test aur npm run test:ui
-  data/                config.json, index.json, shares.json   <- backup ke layak
-  cache/thumbs/        generated thumbnails (delete karna safe hai)
-  storage/             uploaded projects aur cloned repos
+  public/              the browser app
+    search.js          plain-language fuzzy search engine
+    usp.html           the product page served at /product and /usp, with sign-in
+  scripts/tunnel.js    creates the public link
+  tests/               npm test and npm run test:ui
+  data/                config.json, users.json, index.json, shares.json   <- worth backing up
+  cache/thumbs/        generated thumbnails (safe to delete)
+  storage/             uploaded projects and cloned repos
 ```
 
-`data/` ka backup rakhiye. Usme passcode hash, project list aur share links hain.
-Baaki sab dobara ban sakta hai.
+Back up `data/`. It holds the passcode hash, accounts, project list and share links.
+Everything else can be rebuilt.
 
 ---
 
 ## Tests
 
 ```
-npm test           # API, search, upload, sync, clone, fresh install (headless)
+npm test           # API, accounts, search, upload, sync, clone, git errors (headless)
 npm run test:ui    # browser tests, needs Chrome
 ```
 
-Tests apna khud ka fixture project banate hain aur git wale tests local throwaway repos
-use karte hain, to koi network ya credentials nahi chahiye, aur aapke asli projects ko
-haath nahi lagta. Agar aapne passcode badal diya hai to `VAULT_PASSCODE` set kar dijiye.
+Tests build their own fixture project and use throwaway local repos for the git tests, so no
+network or credentials are needed and your real projects are never touched. If you changed
+the passcode, set `VAULT_PASSCODE`.
 
 ---
 
-## Dhyan rakhne wali baatein
+## Good to know
 
-- Owner passcode ek hi hai poore vault ke liye. Share links ke apne alag passcode hote hain.
-- "Download off" wala share client ko download button nahi deta aur zip block karta hai,
-  lekin preview ke liye file browser tak jaati hi hai. Devtools ya screenshot se koi
-  determined banda nikaal sakta hai. Ye casual protection hai, DRM nahi.
-- Trycloudflare ka link har baar naya banta hai. Fixed link chahiye to Cloudflare account
-  leke named tunnel setup karna padega.
-- Server sirf tab tak chalta hai jab tak wo window khuli hai. Crash ho jaye to
-  `Start Vault.bat` 3 second me khud restart kar deta hai aur `crash.log` likh deta hai.
+- There is one owner passcode for the whole vault, plus an account per person. Share links
+  have their own separate passcodes, unrelated to both.
+- A "downloads off" share hides the download button and blocks the zip, but the file still
+  travels to the browser for the preview. A determined person could extract it via devtools
+  or a screenshot. This is casual protection, not DRM.
+- A trycloudflare link is new every time. For a fixed link, set up a named tunnel with a
+  Cloudflare account.
+- The server runs only while its window is open. If it crashes, `Start Vault.bat` restarts
+  it within 3 seconds and writes `crash.log`.
 
 ---
 
-## Agar kuch atak jaye
+## If something gets stuck
 
-**Port already in use** — pichla server chal raha hai. Task Manager me `node.exe` band
-kijiye, ya `PORT=4478 npm start` chala lijiye.
+**Port already in use** — a previous server is running. End `node.exe` in Task Manager, or
+run `PORT=4478 npm start`.
 
-**Passcode bhool gayi** — `data/config.json` delete karke server restart. Naya passcode
-generate hoga aur print ho jayega. Project list reset hogi (files ko kuch nahi hota).
+**Forgot the passcode** — delete `data/config.json` and restart the server. A new passcode
+is generated and printed. The project list resets, and existing sessions are signed out
+because the session secret is regenerated (your files and accounts are untouched).
 
-**Project pe "folder missing"** — original folder move ya rename ho gaya. Projects me jaake
-hata dijiye aur naye path se dubara add kar dijiye.
+**Forgot an account password** — there is no reset email, because there is no email. Unlock
+the vault with the owner passcode instead, or delete that account's entry from
+`data/users.json` and sign up again with the same address. Emptying the file entirely makes
+the next sign-up the owner once more.
 
-**Nayi files nahi dikh rahi** — normally khud aa jaani chahiye. Server window me
-`Watching N project folder(s)` line dekhiye: agar aapka project count me nahi hai to
-watcher us folder pe nahi laga (network drive ya ajeeb path ho sakta hai), aisi soorat me
-**Rescan** use kariye.
+**Project shows "folder missing"** — the original folder was moved or renamed. Remove it in
+Projects and add it again from the new path.
 
-**Git strip pe "sync ruka hua hai"** — us line ke niche wajah likhi hoti hai. Aksar internet
-nahi hai ya credentials expire ho gaye. Ek baar terminal me `git pull` chala lijiye.
+**New files not showing** — they normally appear on their own. Check the server window's
+`Watching N project folder(s)` line: if your project isn't counted, the watcher didn't
+attach (a network drive or unusual path can do this) — use **Rescan**.
 
-**Auto pull nahi ho raha** — 99% cases me uncommitted changes hain. Git strip me
-"N local changes" dikhega. Commit ya stash kar dijiye.
+**Git strip says "sync paused"** — the reason is printed under that line. Usually no
+internet or expired credentials. Run `git pull` once in the terminal.
 
-**Clone pe "GitHub ne login maanga"** — private repo hai. Ya to token field bhariye, ya ek
-baar terminal me `git clone` chala ke credentials save kar lijiye.
+**Auto pull not happening** — 99% of the time there are uncommitted changes. The git strip
+shows "N local changes". Commit or stash them.
 
-**Thumbnail nahi aa raha** — us format ka preview nahi banta (PSD, INDD waghairah).
-File phir bhi download ho jayegi.
+**Clone asks for a GitHub login** — it's a private repo. Fill in the token field, or run
+`git clone` once in the terminal to save your credentials.
+
+**No thumbnail** — that format has no preview (PSD, INDD, and so on). The file still
+downloads.

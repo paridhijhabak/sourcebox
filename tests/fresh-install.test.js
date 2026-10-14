@@ -94,7 +94,7 @@ let browser = null;
   page.on('console', (m) => { if (m.type() === 'error' && !/401/.test(m.text())) errors.push(m.text()); });
 
   await page.goto(BASE, { waitUntil: 'networkidle2' });
-  ok('default vault name shown', (await page.$eval('#lock-title', (el) => el.textContent)) === 'Asset Vault',
+  ok('default vault name shown', (await page.$eval('#lock-title', (el) => el.textContent)) === 'SourceBox',
      await page.$eval('#lock-title', (el) => el.textContent));
   await page.type('#lock-pass', passcode);
   await page.click('#lock-go');

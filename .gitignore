@@ -16,3 +16,6 @@ node_modules/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Demo recording, too large for the repo
+sourcebox-one-link-always-current.mp4

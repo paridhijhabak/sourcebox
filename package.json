@@ -1,5 +1,5 @@
 {
-  "name": "asset-vault",
+  "name": "sourcebox",
   "version": "1.0.0",
   "private": true,
   "type": "commonjs",
@@ -7,8 +7,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "dev": "node server.js",
     "share": "node scripts/tunnel.js",
-    "test": "node tests/api.test.js && node tests/search.test.js && node tests/upload.test.js && node tests/sync.test.js && node tests/clone.test.js",
+    "test": "node tests/api.test.js && node tests/accounts.test.js && node tests/search.test.js && node tests/upload.test.js && node tests/sync.test.js && node tests/clone.test.js && node tests/git-errors.test.js",
     "test:ui": "node tests/ui.test.js && node tests/ui-sync.test.js && node tests/fresh-install.test.js"
   },
   "dependencies": {

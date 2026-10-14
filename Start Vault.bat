@@ -1,8 +1,8 @@
 @echo off
-title Asset Vault
+title SourceBox
 cd /d "%~dp0"
 echo.
-echo   Asset Vault start ho raha hai...
+echo   SourceBox start ho raha hai...
 echo   Is window ko band mat kijiye.
 echo.
 start "" http://localhost:4477

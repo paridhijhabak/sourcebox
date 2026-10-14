@@ -1,45 +1,65 @@
 /* ============================================================ tokens */
 :root {
-  --bg: #141110;
-  --bg-2: #1b1716;
-  --panel: #211c1a;
-  --panel-2: #2a2422;
-  --line: #362f2c;
-  --line-soft: #2a2421;
-  --ink: #efece5;
-  --ink-2: #b8ada6;
-  --ink-3: #8a7d76;
-  --accent: #eb2127;
-  --accent-soft: rgba(235, 33, 39, 0.14);
-  --accent-2: #fcd404;
-  --ok: #4ba36b;
-  --radius: 10px;
-  --radius-lg: 16px;
+  --bg: #0f1218;
+  --bg-2: #161a21;
+  --panel: #1a1f29;
+  --panel-2: #232936;
+  --line: #333a47;
+  --line-soft: #262d38;
+  --ink: #f1f3f8;
+  --ink-2: #adb4c2;
+  --ink-3: #6f7889;
+  --hover: #1f2531;
+  --accent: #6e79ff;
+  --accent-soft: rgba(110, 121, 255, 0.17);
+  --on-accent: #ffffff;
+  --accent-2: #f2b14a;
+  --mark: #6e79ff;
+  --danger: #ff6b6b;
+  --ok: #4ade80;
+  --fold-back-hi: #cda152;
+  --fold-back-lo: #ab8339;
+  --fold-front-hi: #e6bc68;
+  --fold-front-lo: #c09a4a;
+  --fold-lip: rgba(255, 255, 255, 0.1);
+  --radius: 12px;
+  --radius-lg: 18px;
   --sidebar-w: 264px;
   /* Preview plate. Deliberately mid-tone rather than dark: brand assets are
      black OR white on transparency, and only a middle grey shows both. */
-  --plate-a: #a9a39b;
-  --plate-b: #b6b0a8;
-  --shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  --plate-a: #a7abb2;
+  --plate-b: #b4b8bf;
+  --shadow: 0 2px 6px rgba(0, 0, 0, 0.42), 0 18px 44px rgba(0, 0, 0, 0.6);
   --font: "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
   --mono: "JetBrains Mono", "Cascadia Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 [data-theme="light"] {
-  --bg: #faf8f4;
-  --bg-2: #f2efe8;
+  --bg: #ffffff;
+  --bg-2: #f5f7fa;
   --panel: #ffffff;
-  --panel-2: #f5f3ee;
-  --line: #ddd7cc;
-  --line-soft: #e9e4da;
-  --ink: #1d1a18;
-  --ink-2: #5f5751;
-  --ink-3: #8c827b;
-  --accent: #b82029;
-  --accent-soft: rgba(184, 32, 41, 0.1);
-  --plate-a: #d9d4cb;
-  --plate-b: #e6e1d9;
-  --shadow: 0 18px 48px rgba(60, 50, 40, 0.18);
+  --panel-2: #f3f6fa;
+  --line: #e3e7ed;
+  --line-soft: #edf0f4;
+  --ink: #14171d;
+  --ink-2: #545c68;
+  --ink-3: #858d9a;
+  --hover: #eff2f7;
+  --accent: #4d53d4;
+  --accent-soft: rgba(77, 83, 212, 0.12);
+  --on-accent: #ffffff;
+  --accent-2: #b27400;
+  --mark: #4d53d4;
+  --danger: #d92d20;
+  --ok: #16a34a;
+  --fold-back-hi: #fadfa8;
+  --fold-back-lo: #f0c983;
+  --fold-front-hi: #fff2d4;
+  --fold-front-lo: #fae0ab;
+  --fold-lip: rgba(255, 255, 255, 0.95);
+  --plate-a: #d6dae0;
+  --plate-b: #e3e7ec;
+  --shadow: 0 1px 2px rgba(16, 16, 20, 0.05), 0 10px 28px rgba(16, 16, 20, 0.08);
 }
 
 * { box-sizing: border-box; }
@@ -79,7 +99,8 @@ a { color: inherit; }
   display: grid;
   place-items: center;
   background:
-    radial-gradient(900px 600px at 50% -10%, rgba(235, 33, 39, 0.16), transparent 65%),
+    /* Follows the accent, so a custom colour reaches the lock screen too. */
+    radial-gradient(900px 600px at 50% -10%, var(--accent-soft), transparent 65%),
     var(--bg);
   z-index: 200;
 }
@@ -102,7 +123,7 @@ a { color: inherit; }
   place-items: center;
   border-radius: 12px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .lock-card h1 { margin: 0 0 6px; font-size: 21px; letter-spacing: -0.02em; }
@@ -144,17 +165,17 @@ input::placeholder { color: var(--ink-3); }
 .btn:hover { background: var(--line-soft); border-color: var(--ink-3); }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn-primary:hover { background: #ff2f36; border-color: #ff2f36; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn-primary:hover { filter: brightness(1.08); }
 .btn-ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
 .btn-ghost:hover { background: var(--panel-2); color: var(--ink); }
-.btn-danger { color: #ff6b6b; }
-.btn-danger:hover { background: rgba(255, 107, 107, 0.12); border-color: rgba(255, 107, 107, 0.4); }
+.btn-danger { color: var(--danger); }
+.btn-danger:hover { background: rgba(255, 95, 95, 0.12); border-color: rgba(255, 95, 95, 0.4); }
 .btn-sm { padding: 6px 10px; font-size: 12px; }
 .btn-icon { padding: 8px; }
 
 .msg { margin-top: 12px; font-size: 12.5px; min-height: 18px; }
-.msg.err { color: #ff7a7a; }
+.msg.err { color: var(--danger); }
 .msg.ok { color: var(--ok); }
 
 /* ============================================================ shell */
@@ -182,7 +203,7 @@ input::placeholder { color: var(--ink-3); }
   width: 30px; height: 30px;
   border-radius: 8px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   display: grid; place-items: center;
   flex: none;
 }
@@ -210,7 +231,7 @@ input::placeholder { color: var(--ink-3); }
 .proj-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .proj-name { flex: 1; font-size: 13px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .proj-count { font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.proj.missing .proj-name { color: #ff7a7a; text-decoration: line-through; }
+.proj.missing .proj-name { color: var(--danger); text-decoration: line-through; }
 
 .tree { margin-top: 2px; }
 .tree-row {
@@ -238,8 +259,18 @@ input::placeholder { color: var(--ink-3); }
   background: var(--panel);
   font-size: 11.5px;
 }
-.git-box.behind { border-color: rgba(252, 212, 4, 0.45); background: rgba(252, 212, 4, 0.06); }
-.git-box.problem { border-color: rgba(235, 33, 39, 0.4); background: var(--accent-soft); }
+.git-line { display: flex; align-items: center; gap: 6px; padding: 4px 6px 0; }
+.git-open {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px;
+  padding: 6px 8px; border-radius: 8px; text-align: left;
+  font-size: 12px; color: var(--ink-2);
+  transition: background 0.12s;
+}
+.git-open:hover { background: var(--panel); color: var(--ink); }
+.git-line.behind .git-open, .git-line.problem .git-open { color: var(--ink); }
+.git-pull-btn { flex: none; padding: 5px 11px; font-size: 12px; }
+.git-box.behind { border-color: rgba(230, 175, 60, 0.45); background: rgba(230, 175, 60, 0.07); }
+.git-box.problem { border-color: rgba(235, 33, 39, 0.4); background: rgba(235, 33, 39, 0.1); }
 .git-top { display: flex; align-items: center; gap: 6px; }
 .git-branch {
   font: 600 11px/1 var(--mono);
@@ -260,7 +291,7 @@ input::placeholder { color: var(--ink-3); }
   background: var(--ok);
 }
 .git-dot.warn { background: var(--accent-2); }
-.git-dot.bad { background: var(--accent); }
+.git-dot.bad { background: var(--danger); }
 .switch.mini-switch { font-size: 11px; color: var(--ink-3); gap: 6px; }
 .switch.mini-switch .track { width: 28px; height: 16px; }
 .switch.mini-switch .track::after { width: 12px; height: 12px; top: 1.6px; left: 2px; }
@@ -275,7 +306,7 @@ input::placeholder { color: var(--ink-3); }
   transition: all 0.12s;
 }
 .chip:hover { border-color: var(--ink-3); color: var(--ink); }
-.chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .chip-n { opacity: 0.65; font-variant-numeric: tabular-nums; }
 
 .side-foot {
@@ -327,6 +358,18 @@ input::placeholder { color: var(--ink-3); }
 .seg button:hover { color: var(--ink); }
 .seg button.on { background: var(--panel-2); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
 
+/* Light / Dark / System segmented control in Settings */
+.seg-appear {
+  display: inline-flex; gap: 3px; padding: 3px; align-self: flex-start;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px;
+}
+.seg-appear button {
+  padding: 7px 18px; border-radius: 7px; font-size: 13px; font-weight: 500;
+  color: var(--ink-2); transition: background 0.14s, color 0.14s;
+}
+.seg-appear button:hover { color: var(--ink); }
+.seg-appear button.on { background: var(--accent); color: var(--on-accent); }
+
 .subbar {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 16px;
@@ -347,20 +390,20 @@ input::placeholder { color: var(--ink-3); }
 /* ---- grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--tile, 190px), 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(var(--tile, 216px), 1fr));
+  gap: 16px;
 }
 .card {
   position: relative;
-  background: var(--panel);
-  border: 1px solid var(--line-soft);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius);
-  overflow: hidden;
-  transition: border-color 0.14s, transform 0.14s, box-shadow 0.14s;
+  padding: 8px 8px 10px;
+  transition: background 0.14s, border-color 0.14s;
   cursor: pointer;
 }
-.card:hover { border-color: var(--ink-3); transform: translateY(-2px); box-shadow: var(--shadow); }
-.card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card:hover { background: var(--hover); }
+.card.sel { background: var(--accent-soft); border-color: var(--accent); }
 
 .card-media {
   position: relative;
@@ -369,23 +412,88 @@ input::placeholder { color: var(--ink-3); }
     repeating-conic-gradient(var(--plate-a) 0% 25%, var(--plate-b) 0% 50%) 50% / 16px 16px;
   display: grid; place-items: center;
   overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(20, 16, 10, 0.14);
 }
-/* Always contain, never cover. A cropped logo is a wrong logo. */
+/* Fill the tile edge to edge: no letter-boxing, no blank margin. The cost is
+   that an image shaped differently from the tile is cropped to fit. */
 .card-media img, .card-media video {
   width: 100%; height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
-  padding: 8px;
 }
-.card-media.plain {
-  background: var(--panel-2);
-  border-bottom: 1px solid var(--line-soft);
+/* Portrait, so it reads as paper rather than as a small empty panel. */
+.card-media.plain { background: transparent; box-shadow: none; padding: 3% 25%; }
+.card-media.plain .ph {
+  width: 100%; height: 100%;
+  border-radius: 7px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 3px rgba(20, 16, 10, 0.14);
+  color: var(--ink-3);
+  gap: 9px;
 }
-.ph { display: grid; place-items: center; gap: 6px; color: rgba(20, 17, 16, 0.5); }
+.ph { display: grid; place-items: center; gap: 6px; color: rgba(10, 9, 8, 0.5); }
 .card-media.plain .ph { color: var(--ink-3); }
-.ph-ext { font: 700 11px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.ph-ext { font: 700 11.5px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
 
-.card-body { padding: 9px 10px 10px; }
+/* ---- folder tile
+   A folder you can see into, the way a file manager's large-icon view does.
+   Layered back to front: the tabbed back panel, the contents, then the front
+   flap that overlaps them. Hover slides the flap down to uncover more. */
+.card-folder .fold {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  display: grid; place-items: center;
+  padding: 3% 1% 4%;
+}
+.fold-shape { position: relative; width: 100%; aspect-ratio: 1.42; }
+
+.fold-back, .fold-front { position: absolute; left: 0; right: 0; pointer-events: none; }
+.fold-back {
+  top: 0; bottom: 0;
+  /* raised tab on the left, then the lower main top edge */
+  clip-path: polygon(0 0, 37% 0, 43% 16%, 100% 16%, 100% 100%, 0 100%);
+  border-radius: 9px 9px 12px 12px;
+  background: linear-gradient(158deg, var(--fold-back-hi), var(--fold-back-lo));
+}
+.fold-front {
+  top: 58%; bottom: 0;
+  border-radius: 5px 5px 12px 12px;
+  background: linear-gradient(180deg, var(--fold-front-hi), var(--fold-front-lo));
+  box-shadow: inset 0 1px 0 var(--fold-lip);
+  transition: transform 0.16s ease;
+}
+.card-folder:hover .fold-front { transform: translateY(9%); }
+
+.fold-peek {
+  position: absolute;
+  left: 13%; right: 13%; top: 18%; bottom: 26%;
+  display: grid;
+}
+.pk {
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  overflow: hidden;
+  display: grid; place-items: center;
+}
+.pk img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pk-ext {
+  font: 700 9px/1 var(--mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.fold-subs {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--ink-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.card-body { padding: 9px 2px 0; }
 .card-name {
   font-size: 12.5px; font-weight: 550;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -399,10 +507,10 @@ input::placeholder { color: var(--ink-3); }
   background: var(--panel-2); font-size: 9.5px; font-weight: 700;
   letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2);
 }
-.tag.k-image { color: #6fb2e8; } .tag.k-vector { color: #a78bfa; }
-.tag.k-video { color: #f0913e; } .tag.k-pdf { color: #ff7a7a; }
-.tag.k-design { color: var(--accent-2); } .tag.k-doc { color: #7fcfa1; }
-.tag.k-font { color: #e88bc0; } .tag.k-archive { color: #b8ada6; }
+.tag.k-image { color: #6fb2e8; } .tag.k-vector { color: #4fd6c4; }
+.tag.k-video { color: #f0913e; } .tag.k-pdf { color: #ff6161; }
+.tag.k-design { color: #c79bff; } .tag.k-doc { color: #7fcfa1; }
+.tag.k-font { color: #e88bc0; } .tag.k-archive { color: #c3b9ae; }
 
 .card-actions {
   position: absolute; top: 7px; right: 7px;
@@ -412,13 +520,14 @@ input::placeholder { color: var(--ink-3); }
 .mini {
   width: 26px; height: 26px; border-radius: 7px;
   display: grid; place-items: center;
-  background: rgba(20, 17, 16, 0.82);
+  background: rgba(10, 9, 8, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #efece5;
+  color: var(--ink);
   backdrop-filter: blur(6px);
 }
-.mini:hover { background: var(--accent); border-color: var(--accent); }
-.mini.on { background: var(--accent); border-color: var(--accent); }
+.mini:hover, .mini.on {
+  background: var(--accent); border-color: var(--accent); color: var(--on-accent);
+}
 
 .card-pick {
   position: absolute; top: 7px; left: 7px;
@@ -472,7 +581,7 @@ input::placeholder { color: var(--ink-3); }
 }
 .row:hover .tick { border-color: var(--ink-3); }
 .tick:hover { border-color: var(--accent); }
-.tick.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tick.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 
 /* ---- empty / loading */
 .empty {
@@ -498,7 +607,7 @@ input::placeholder { color: var(--ink-3); }
 #viewer {
   position: fixed; inset: 0; z-index: 120;
   display: grid; grid-template-columns: 1fr 320px;
-  background: rgba(10, 8, 8, 0.92);
+  background: rgba(6, 5, 4, 0.92);
   backdrop-filter: blur(10px);
 }
 #viewer.solo { grid-template-columns: 1fr; }
@@ -536,7 +645,7 @@ input::placeholder { color: var(--ink-3); }
   position: absolute; top: 0; left: 0; right: 0;
   display: flex; align-items: center; gap: 8px;
   padding: 12px 16px;
-  background: linear-gradient(rgba(10, 8, 8, 0.75), transparent);
+  background: linear-gradient(rgba(6, 5, 4, 0.75), transparent);
   z-index: 3;
 }
 .v-title { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -573,8 +682,11 @@ input::placeholder { color: var(--ink-3); }
 /* ============================================================ modal */
 .modal-back {
   position: fixed; inset: 0; z-index: 150;
-  background: rgba(10, 8, 8, 0.7);
-  backdrop-filter: blur(6px);
+  /* Light enough that the app behind stays readable. Settings is where colours
+     are chosen, and a sheet that blacks out the thing being themed makes the
+     choice impossible to judge. */
+  background: rgba(6, 5, 4, 0.34);
+  backdrop-filter: blur(2px);
   display: grid; place-items: center;
   padding: 20px;
 }
@@ -595,10 +707,13 @@ input::placeholder { color: var(--ink-3); }
 }
 .modal-head h2 { margin: 0; font-size: 15.5px; letter-spacing: -0.01em; }
 .modal-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+/* Not sticky. Pinned to the bottom of a scrolling modal it sat on top of
+   whatever was scrolled underneath it, which quietly swallowed clicks meant
+   for the last control in the body. */
 .modal-foot {
   display: flex; gap: 8px; justify-content: flex-end;
   padding: 14px 18px; border-top: 1px solid var(--line-soft);
-  position: sticky; bottom: 0; background: var(--panel);
+  background: var(--panel);
 }
 
 .field { display: flex; flex-direction: column; gap: 6px; }
@@ -618,7 +733,7 @@ input::placeholder { color: var(--ink-3); }
   transition: transform 0.15s, background 0.15s;
 }
 .switch input:checked + .track { background: var(--accent); }
-.switch input:checked + .track::after { transform: translateX(15px); background: #fff; }
+.switch input:checked + .track::after { transform: translateX(15px); background: var(--on-accent); }
 
 .tabs { display: flex; gap: 4px; padding: 0 18px; border-bottom: 1px solid var(--line-soft); }
 .tab {
@@ -643,9 +758,9 @@ table.tbl tr:last-child td { border-bottom: none; }
   max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .pill { padding: 2px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 600; }
-.pill.green { background: rgba(75, 163, 107, 0.16); color: #6fce93; }
+.pill.green { background: rgba(94, 179, 106, 0.16); color: #84d18f; }
 .pill.grey { background: var(--panel-2); color: var(--ink-3); }
-.pill.red { background: rgba(235, 33, 39, 0.16); color: #ff7a7a; }
+.pill.red { background: rgba(235, 33, 39, 0.16); color: var(--danger); }
 
 .drop {
   border: 2px dashed var(--line);
@@ -670,7 +785,7 @@ table.tbl tr:last-child td { border-bottom: none; }
   max-width: 340px;
 }
 .toast.err { border-color: rgba(235, 33, 39, 0.5); }
-.toast.ok { border-color: rgba(75, 163, 107, 0.5); }
+.toast.ok { border-color: rgba(94, 179, 106, 0.5); }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
 
 /* ============================================================ responsive */
@@ -736,3 +851,253 @@ table.tbl tr:last-child td { border-bottom: none; }
 }
 .start-t { font-size: 13.5px; font-weight: 600; color: var(--ink); }
 .start-d { font-size: 12px; color: var(--ink-3); line-height: 1.45; }
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .fold-front { transition: none; }
+  .card:hover { transform: none; }
+  .card-folder:hover .fold-front { transform: none; }
+}
+
+/* ============================================================ views (scopes) */
+.scopes { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px 6px 4px; }
+.scope {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 9px; border-radius: 999px;
+  font-size: 11.5px;
+  border: 1px solid var(--line-soft); background: var(--panel);
+  font-size: 12px; color: var(--ink-2);
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.scope:hover { border-color: var(--ink-3); color: var(--ink); }
+.scope.on {
+  background: var(--accent-soft); border-color: transparent;
+  color: var(--ink); font-weight: 600;
+}
+.scope svg { flex: none; color: var(--ink-3); }
+.scope.on svg { color: var(--accent); }
+.scope-n { font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.scope.on .scope-n { color: var(--accent); }
+
+/* ---- starred */
+/* A star that only appears on hover is a star you forget you set, so a starred
+   card keeps showing it. The download button still waits for hover, otherwise
+   every starred tile carries permanent furniture. */
+.card.starred .card-actions { opacity: 1; }
+.card.starred:not(:hover) .card-actions [data-dl] { display: none; }
+.mini.on svg { fill: currentColor; }
+
+/* ---- keyboard cursor */
+.card.cursor { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.row.cursor { box-shadow: inset 2px 0 0 var(--accent); background: var(--panel-2); }
+
+/* ============================================================ viewer panel */
+.v-head { display: flex; align-items: flex-start; gap: 8px; }
+.v-head h3 { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.v-head .mini { position: static; flex: none; }
+.v-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.v-block { display: grid; gap: 8px; }
+.v-block h4 {
+  margin: 0; font-size: 10.5px; font-weight: 700; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+
+.swatches { display: grid; gap: 4px; }
+.swatch {
+  display: flex; align-items: center; gap: 9px;
+  padding: 5px 7px; border-radius: 8px;
+  border: 1px solid var(--line-soft); background: var(--panel-2);
+  text-align: left; transition: border-color 0.12s;
+}
+.swatch:hover { border-color: var(--accent); }
+.swatch-chip {
+  width: 20px; height: 20px; border-radius: 5px; flex: none;
+  /* A light swatch on a light panel needs an edge to be a swatch at all. */
+  box-shadow: inset 0 0 0 1px rgba(128, 128, 128, 0.35);
+}
+.swatch-hex { flex: 1; font: 600 11.5px/1 var(--mono); letter-spacing: 0.02em; }
+.swatch-share { font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+.commit { display: flex; gap: 8px; align-items: baseline; }
+.commit + .commit { margin-top: 7px; }
+.commit-hash {
+  font: 600 10.5px/1.6 var(--mono); color: var(--accent);
+  padding: 1px 5px; border-radius: 5px; background: var(--accent-soft); flex: none;
+}
+.commit-body { min-width: 0; }
+.commit-subject { font-size: 12px; overflow-wrap: anywhere; }
+.commit-meta { font-size: 10.5px; color: var(--ink-3); margin-top: 1px; }
+
+/* ---- shortcuts */
+table.tbl.keys td { padding: 7px 10px 7px 0; vertical-align: middle; }
+table.tbl.keys td:last-child { color: var(--ink-2); }
+kbd {
+  display: inline-block;
+  font: 600 11px/1.5 var(--mono);
+  padding: 2px 7px; border-radius: 6px;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-bottom-width: 2px; color: var(--ink);
+  white-space: nowrap;
+}
+
+/* A starred row keeps its star visible the same way a starred card does. */
+.row.starred .row-acts { opacity: 1; }
+.row.starred:not(:hover) .row-acts [data-dl] { display: none; }
+.row-star.on { color: var(--accent); }
+.row-star.on svg { fill: currentColor; }
+
+/* The panel claims these hexes are exact; say so, quietly. */
+.h4-note {
+  font-weight: 500; letter-spacing: 0; text-transform: none;
+  color: var(--ink-3); margin-left: 6px;
+}
+
+/* A standalone note inside a modal. .hint was only ever styled under .field,
+   so a bare one rendered as plain body text. */
+.modal-body > .hint { font-size: 12px; color: var(--ink-3); margin: 0; }
+
+/* Nothing read yet: neither good news nor bad. */
+.git-dot.idle { background: var(--ink-3); }
+.git-open[disabled] { cursor: default; }
+.git-open[disabled]:hover { background: transparent; }
+
+/* ---- project row now owns its folders */
+.proj { gap: 6px; }
+.proj .tree-caret { margin-right: -2px; }
+.proj-list .tree, #proj-list .tree { margin: 1px 0 6px; }
+.tree-row { padding-right: 8px; }
+
+/* ---- toolbar popover (file type) */
+.pop-wrap { position: relative; }
+#btn-kinds.on { border-color: var(--accent); color: var(--accent); }
+#kinds-n { font-variant-numeric: tabular-nums; font-weight: 700; }
+.pop {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  width: 280px; padding: 4px 4px 10px;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.pop-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 8px 6px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.pop-empty { padding: 4px 8px; font-size: 12px; color: var(--ink-3); }
+
+/* ---- viewer: Back on the left, close in the panel's top corner */
+.v-back { flex: none; padding: 6px 12px 6px 8px; }
+.v-back svg { transform: rotate(180deg); }
+.v-head #v-close { flex: none; margin-left: 2px; }
+
+/* Repo status is not navigation: it sits under the tree, out of the way. */
+#git-strip { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line-soft); }
+
+/* Rows follow the same rule as cards: highlight on the page, no inner boxes. */
+.row:hover { background: var(--hover); }
+.row.cursor { background: var(--hover); }
+
+/* Action buttons used to sit on a card surface; on the bare page they need
+   their own backing to stay legible over a thumbnail. */
+.card-actions, .card-pick { top: 14px; }
+.card-actions { right: 14px; }
+.card-pick { left: 14px; }
+
+/* The folder is the item now, so the keyboard cursor rings the whole tile. */
+.card.cursor { background: var(--hover); border-color: var(--accent); box-shadow: none; }
+
+/* ---- theme pickers in Settings */
+.swatch-picks { display: grid; gap: 8px; }
+.pick {
+  display: grid; grid-template-columns: 34px 1fr; grid-auto-rows: auto;
+  align-items: center; gap: 2px 11px; cursor: pointer;
+  padding: 7px 9px; border-radius: 9px;
+  border: 1px solid var(--line-soft); background: var(--panel-2);
+}
+.pick:hover { border-color: var(--ink-3); }
+.pick input[type="color"] {
+  grid-row: span 2; width: 34px; height: 34px; padding: 0; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 8px; background: none;
+}
+/* Chrome draws its own inset chrome inside a colour input; strip it so the
+   swatch is just the colour. */
+.pick input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+.pick input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
+.pick-name { font-size: 13px; font-weight: 550; align-self: end; }
+.pick-hint { font-size: 11px; color: var(--ink-3); align-self: start; }
+
+.preset-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.preset {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 10px 5px 6px; border-radius: 999px;
+  border: 1px solid var(--line-soft); background: var(--panel);
+  font-size: 11.5px; color: var(--ink-2);
+}
+.preset:hover { border-color: var(--accent); color: var(--ink); }
+.preset span {
+  width: 11px; height: 11px; border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+.preset span + span { margin-left: -7px; }
+
+/* ---- live theme preview
+   Built from the same variables the real UI uses, so what it shows is what
+   you get. Everything here is proportional, so it scales with the box. */
+.theme-preview {
+  display: grid; grid-template-columns: 34% 1fr;
+  height: 132px; margin-bottom: 4px;
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: var(--bg);
+}
+.tp-side {
+  background: var(--bg-2); border-right: 1px solid var(--line-soft);
+  padding: 9px 8px; display: flex; flex-direction: column; gap: 5px;
+}
+.tp-pill { height: 9px; width: 58%; border-radius: 999px; background: var(--hover); }
+.tp-pill.on { background: var(--accent-soft); width: 42%; }
+.tp-row { height: 7px; width: 82%; border-radius: 4px; background: var(--hover); }
+.tp-row.on { background: var(--accent-soft); }
+.tp-row:nth-of-type(4) { width: 66%; margin-left: 10px; }
+.tp-row:nth-of-type(5) { width: 58%; margin-left: 10px; }
+
+.tp-main { display: flex; flex-direction: column; min-width: 0; }
+.tp-bar {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 9px; border-bottom: 1px solid var(--line-soft);
+}
+.tp-input { flex: 1; height: 15px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); }
+.tp-btn {
+  flex: none; padding: 3px 9px; border-radius: 999px;
+  background: var(--accent); color: var(--on-accent);
+  font-size: 9px; font-weight: 650; letter-spacing: 0.01em;
+}
+.tp-items { flex: 1; display: flex; align-items: center; gap: 9px; padding: 0 10px; }
+
+.tp-folder { position: relative; width: 40px; height: 31px; flex: none; }
+.tp-tab {
+  position: absolute; left: 0; top: 0; width: 46%; height: 26%;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(158deg, var(--fold-back-hi), var(--fold-back-lo));
+}
+.tp-body {
+  position: absolute; left: 0; right: 0; top: 18%; bottom: 0;
+  border-radius: 3px 5px 6px 6px;
+  background: linear-gradient(180deg, var(--fold-front-hi), var(--fold-front-lo));
+}
+.tp-file {
+  width: 24px; height: 30px; flex: none; border-radius: 3px;
+  background: var(--panel); border: 1px solid var(--line);
+}
+
+/* The lock screen takes the owner passcode. Email accounts are signed in on the
+   product page, which is the one place those forms are kept. */
+.lock-card p.lock-alt {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.lock-alt a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

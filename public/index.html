@@ -4,9 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Asset Vault</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23eb2127'/%3E%3Cpath d='M9 12h5l2 2.4h7v9.6H9z' fill='%23fff'/%3E%3C/svg%3E">
+<title>SourceBox</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23fb6530'/%3E%3Cpath d='M9 12h5l2 2.4h7v9.6H9z' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/styles.css">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('av.theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}catch(e){}</script>
 </head>
 <body>
 
@@ -19,6 +20,12 @@
   <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11m0 0 4-4m-4 4-4-4M4 17v2.5h16V17"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="17.5" cy="6" r="2.6"/><circle cx="6.5" cy="12" r="2.6"/><circle cx="17.5" cy="18" r="2.6"/><path d="m9 10.7 6-3.4M9 13.3l6 3.4"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <!-- Star is drawn with fill:none like its neighbours; the "on" state swaps
+       in fill:currentColor via CSS so a starred item reads as solid. -->
+  <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.6l2.6 5.3 5.8.85-4.2 4.1 1 5.8-5.2-2.73-5.2 2.73 1-5.8-4.2-4.1 5.8-.85z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.2 1.9"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5 21 8l-9 4.5L3 8z"/><path d="M3.4 12.4 12 16.7l8.6-4.3"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.6" y="6.2" width="18.8" height="11.6" rx="2.2"/><path d="M6.4 9.8h.01M9.6 9.8h.01M12.8 9.8h.01M16 9.8h.01M6.4 13h.01M9.6 13h.01M12.8 13h.01M16 13h.01M8.4 15.8h7.2"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v4.5h-4.5"/></symbol>
@@ -40,13 +47,14 @@
 <div id="lock">
   <form class="lock-card" id="lock-form">
     <div class="lock-mark"><svg width="22" height="22"><use href="#i-lock"/></svg></div>
-    <h1 id="lock-title">Asset Vault</h1>
-    <p id="lock-sub">Aage badhne ke liye passcode daaliye.</p>
+    <h1 id="lock-title">SourceBox</h1>
+    <p id="lock-sub">Enter your passcode to continue.</p>
     <div class="pass-row">
       <input type="password" id="lock-pass" placeholder="Passcode" autocomplete="current-password" autofocus>
       <button class="btn btn-primary" type="submit" id="lock-go">Open</button>
     </div>
     <div class="msg" id="lock-msg"></div>
+    <p class="lock-alt" id="lock-alt">Have an account? <a href="/product#account">Sign in with your email</a></p>
   </form>
 </div>
 
@@ -56,12 +64,14 @@
     <div class="brand">
       <div class="brand-mark"><svg width="16" height="16"><use href="#i-folder"/></svg></div>
       <div style="min-width:0">
-        <div class="brand-name" id="vault-name">Asset Vault</div>
+        <div class="brand-name" id="vault-name">SourceBox</div>
         <div class="brand-sub" id="vault-sub">Loading</div>
       </div>
     </div>
 
     <div class="side-scroll">
+      <div class="scopes" id="scopes"></div>
+
       <div id="proj-section">
         <div class="side-head">
           <span>Projects</span>
@@ -73,12 +83,6 @@
       </div>
 
       <div id="git-strip" class="hidden"></div>
-
-      <div class="side-head"><span>Folders</span></div>
-      <div class="tree" id="tree"></div>
-
-      <div class="side-head"><span>File type</span></div>
-      <div class="filter-chips" id="kind-chips"></div>
     </div>
 
     <div class="stat-line" id="stats"></div>
@@ -86,6 +90,7 @@
       <button class="btn btn-sm owner-only" id="btn-upload"><svg width="13" height="13"><use href="#i-upload"/></svg> Upload</button>
       <button class="btn btn-sm owner-only" id="btn-rescan"><svg width="13" height="13"><use href="#i-refresh"/></svg> Rescan</button>
       <button class="btn btn-sm owner-only" id="btn-shares"><svg width="13" height="13"><use href="#i-share"/></svg> Links</button>
+      <button class="btn btn-sm btn-icon" id="btn-keys" title="Keyboard shortcuts (?)"><svg width="14" height="14"><use href="#i-keyboard"/></svg></button>
       <button class="btn btn-sm btn-icon" id="btn-theme" title="Light / dark"><svg width="14" height="14"><use href="#i-sun"/></svg></button>
       <button class="btn btn-sm btn-icon owner-only" id="btn-settings" title="Settings"><svg width="14" height="14"><use href="#i-gear"/></svg></button>
     </div>
@@ -96,7 +101,7 @@
       <button class="btn btn-ghost btn-icon" id="menu-btn"><svg width="18" height="18"><use href="#i-menu"/></svg></button>
       <div class="search-wrap">
         <svg class="lead" width="16" height="16"><use href="#i-search"/></svg>
-        <input type="search" id="q" placeholder="Kya dhoondh rahi hain? jaise: red wala logo, insta post hindi, tshirt print" autocomplete="off" spellcheck="false">
+        <input type="search" id="q" placeholder="Search in plain language — logo, invoice pdf, product photo…" autocomplete="off" spellcheck="false">
         <div class="search-kbd"><kbd>/</kbd></div>
         <button class="btn btn-ghost btn-icon hidden" id="clearq"><svg width="14" height="14"><use href="#i-x"/></svg></button>
       </div>
@@ -107,6 +112,13 @@
         <option value="date">Newest first</option>
         <option value="size">Largest first</option>
       </select>
+      <div class="pop-wrap">
+        <button class="btn" id="btn-kinds"><svg width="14" height="14"><use href="#i-layers"/></svg> Type<span id="kinds-n"></span></button>
+        <div class="pop hidden" id="kinds-pop">
+          <div class="pop-head"><span>File type</span><button class="btn btn-ghost btn-sm" id="kinds-clear">Clear</button></div>
+          <div class="filter-chips" id="kind-chips"></div>
+        </div>
+      </div>
       <div class="seg">
         <button id="v-grid" class="on" title="Card view"><svg width="16" height="16"><use href="#i-grid"/></svg></button>
         <button id="v-list" title="List view"><svg width="16" height="16"><use href="#i-list"/></svg></button>

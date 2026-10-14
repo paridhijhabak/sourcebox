@@ -1,9 +1,13 @@
-/* Layman-language fuzzy search for the vault.
+/* Plain-language fuzzy search for the vault.
  *
- * People do not search by filename. They type "wo red wala logo",
- * "insta post hindi", "tshirt print file". So a query is expanded through a
- * synonym table (English + Hinglish), matched against the filename AND the
- * folder path, and finally softened with a subsequence matcher for typos.
+ * People do not search by filename. They describe what they want — "the red
+ * logo", "last quarter's invoice", "signed contract pdf", "product photos".
+ * So a query is expanded through a synonym table (generic + domain terms,
+ * with Hinglish aliases kept so the same search works in that market too),
+ * matched against the filename AND the folder path, and finally softened with
+ * a subsequence matcher for typos. The engine is domain-neutral: the synonym
+ * rows only add recall on top of the core name/path/fuzzy matching, so it
+ * works the same whether the files are design assets, legal docs, or photos.
  */
 (function (global) {
   'use strict';
@@ -74,6 +78,29 @@
     ['tagline', 'slogan', 'strapline'],
     ['research', 'docs', 'documentation', 'notes', 'brief'],
     ['clearspace', 'safezone', 'padding', 'margin'],
+
+    /* ---- generic business / document vocabulary (domain-neutral) ---- */
+    ['invoice', 'invoices', 'bill', 'bills', 'billing', 'receipt', 'receipts'],
+    ['contract', 'contracts', 'agreement', 'agreements', 'mou', 'nda', 'terms'],
+    ['proposal', 'proposals', 'quote', 'quotation', 'estimate', 'quotes'],
+    ['report', 'reports', 'summary', 'analysis', 'review'],
+    ['resume', 'cv', 'resumes', 'biodata'],
+    ['presentation', 'deck', 'pitch', 'keynote', 'ppt', 'pptx'],
+    ['spreadsheet', 'sheet', 'excel', 'xls', 'xlsx', 'workbook'],
+    ['slip', 'payslip', 'salary', 'paystub'],
+    ['statement', 'statements', 'ledger', 'account'],
+    ['invoice', 'tax', 'gst', 'vat'],
+    ['screenshot', 'screengrab', 'capture', 'screencap'],
+    ['scan', 'scanned', 'scan', 'copy'],
+    ['form', 'forms', 'application', 'template', 'templates'],
+    ['certificate', 'certificates', 'cert', 'certification', 'diploma'],
+    ['profile', 'avatar', 'headshot', 'portrait', 'dp'],
+    ['map', 'maps', 'location', 'floorplan', 'blueprint'],
+    ['chart', 'graph', 'diagram', 'infographic', 'plot'],
+    ['signature', 'signed', 'stamp', 'seal'],
+    ['backup', 'backups', 'export', 'dump', 'archive'],
+    ['old', 'archive', 'archived', 'previous', 'legacy', 'purana'],
+    ['new', 'latest', 'recent', 'current', 'naya'],
   ];
 
   // Query words that mean "give me this kind of file", regardless of name.
