@@ -22,3 +22,6 @@ sourcebox-one-link-always-current.mp4
 
 # Built marketing site
 site/
+
+.vercel
+.env*

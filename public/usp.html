@@ -788,8 +788,10 @@
     }
 
     fetch('/api/auth/state').then(function (r) {
-      // A static host answers this with its 404 page, not with JSON.
-      if (!r.ok) throw new Error('no vault');
+      // A static host answers this with a page, not with JSON. Check for both
+      // the status and the type rather than waiting for the parse to fail.
+      var type = r.headers.get('content-type') || '';
+      if (!r.ok || type.indexOf('json') < 0) throw new Error('no vault here');
       return r.json();
     }).then(function (st) {
       state.accounts = st.accounts;
