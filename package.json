@@ -10,7 +10,9 @@
     "dev": "node server.js",
     "share": "node scripts/tunnel.js",
     "test": "node tests/api.test.js && node tests/accounts.test.js && node tests/search.test.js && node tests/upload.test.js && node tests/sync.test.js && node tests/clone.test.js && node tests/git-errors.test.js",
-    "test:ui": "node tests/ui.test.js && node tests/ui-sync.test.js && node tests/fresh-install.test.js"
+    "test:ui": "node tests/ui.test.js && node tests/ui-sync.test.js && node tests/fresh-install.test.js",
+    "build:site": "node scripts/build-site.js",
+    "build": "node scripts/build-site.js"
   },
   "dependencies": {
     "archiver": "^7.0.1",

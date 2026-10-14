@@ -270,6 +270,32 @@ In **Settings** you can:
 
 ---
 
+## Hosting the product page
+
+The vault itself cannot be deployed to a serverless host. It watches folders on the machine
+it runs on, keeps an index and a thumbnail cache on disk, clones git repos and holds an SSE
+connection open — none of which survives a read-only, ephemeral function. More to the
+point, a cloud box cannot see the folders on your computer, which is the whole product.
+
+The page that describes it is a different matter, and it is a static file:
+
+```
+npm run build:site     # copies public/usp.html -> site/index.html
+vercel --prod          # or any static host; vercel.json is already set up
+```
+
+Live at **https://sourcebox-phi.vercel.app**.
+
+There is no second copy of the page to keep in step — `public/usp.html` is the only source,
+and it checks at load whether a vault is answering `/api/auth/state`. On your machine the
+sign-in and sign-up forms are live; on the hosted copy the same card shows install
+instructions instead.
+
+If you want the vault reachable from outside your machine, use `Share Online.bat`
+(a Cloudflare tunnel), or run it on a box with a real disk — a VPS, Railway, Render, Fly.
+
+---
+
 ## Product page
 
 `http://localhost:4477/product` (also `/usp`) — what SourceBox is, in one page: the problem
