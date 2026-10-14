@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "node scripts/build-site.js",
+  "outputDirectory": "site",
+  "installCommand": "echo no dependencies needed for the site",
+  "framework": null,
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/product", "destination": "/" },
+    { "source": "/usp", "destination": "/" }
+  ]
+}

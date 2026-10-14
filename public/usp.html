@@ -265,6 +265,10 @@
   .auth-foot { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line-soft); font-size: 13px; color: var(--ink-3); }
   .auth-foot a { color: var(--accent-lit); text-decoration: underline; text-underline-offset: 3px; }
   .hide { display: none !important; }
+  .steps-cmd { margin-top: 18px; display: grid; gap: 8px; }
+  .steps-cmd code { font-family: var(--mono); font-size: 12.5px; color: var(--ink);
+    background: var(--bg-2); border: 1px solid var(--line-soft); border-radius: 9px; padding: 10px 12px; display: block; overflow-x: auto; }
+  .steps-cmd code .pr { color: var(--accent-lit); }
   .who { display: flex; align-items: center; gap: 12px; margin-top: 20px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); }
   .who .av { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-family: var(--display);
     color: #fff; background: linear-gradient(162deg, var(--accent-lit), var(--accent-deep)); }
@@ -541,6 +545,22 @@
           <div class="auth-foot"><a href="#account" id="do-logout">Sign out of this device</a></div>
         </div>
 
+        <!-- no vault behind this page: it is being read on the web -->
+        <div id="auth-remote" class="hide">
+          <h3>Run it on your own machine</h3>
+          <p class="sub">This page is the tour. The vault is a small server you run yourself, which is the whole point &mdash; it reads the folders already on your computer, and your account is created there, not here.</p>
+          <div class="steps-cmd">
+            <code><span class="pr">$</span> git clone https://github.com/paridhijhabak/sourcebox.git</code>
+            <code><span class="pr">$</span> cd sourcebox &amp;&amp; npm install</code>
+            <code><span class="pr">$</span> npm start</code>
+          </div>
+          <a class="btn btn-primary" href="https://github.com/paridhijhabak/sourcebox" rel="noopener">Get it on GitHub</a>
+          <div class="auth-foot">
+            It prints a passcode on first run. Open <span class="mono">localhost:4477/product</span>
+            on your machine and the sign-up form on this page becomes live.
+          </div>
+        </div>
+
         <!-- log in / sign up -->
         <div id="auth-forms">
           <h3 id="auth-title">Log in</h3>
@@ -745,7 +765,33 @@
       });
     });
 
-    fetch('/api/auth/state').then(function (r) { return r.json(); }).then(function (st) {
+    /* Hosted on the web with no vault behind it: every door here would lead
+     * nowhere, so the card turns into install instructions instead. */
+    function paintRemote() {
+      show($('auth-forms'), false);
+      show($('auth-known'), false);
+      show($('auth-remote'), true);
+      var repo = 'https://github.com/paridhijhabak/sourcebox';
+      [['nav-cta', 'Get SourceBox'], ['hero-cta', 'Get SourceBox'], ['cta-signup', 'Get SourceBox']]
+        .forEach(function (pair) {
+          var el = $(pair[0]);
+          el.textContent = pair[1];
+          el.setAttribute('href', repo);
+          el.setAttribute('rel', 'noopener');
+        });
+      show($('nav-login'), false);
+      show($('hero-login'), false);
+      document.querySelectorAll('.cta-final a[href="/"]').forEach(function (el) {
+        el.textContent = 'Read the docs';
+        el.setAttribute('href', repo + '#readme');
+      });
+    }
+
+    fetch('/api/auth/state').then(function (r) {
+      // A static host answers this with its 404 page, not with JSON.
+      if (!r.ok) throw new Error('no vault');
+      return r.json();
+    }).then(function (st) {
       state.accounts = st.accounts;
       state.needsFirstAccount = !!st.needsFirstAccount;
       if (st.signedIn) { paintSignedIn(st.user); return; }
@@ -767,9 +813,7 @@
       }
       // A link straight to #account/#signup lands on the right tab.
       if (location.hash === '#signup') navTo('signup');
-    }).catch(function () {
-      setMsg('Could not reach the vault. Start the server, then reload this page.', 'err');
-    });
+    }).catch(paintRemote);
   })();
 
   /* Hero: type a plain-language query, then surface matching tiles. */
